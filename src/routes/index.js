@@ -9,7 +9,7 @@ const __dirname = join(__filename, '..');
 const router = Router();
 
 const routeFiles = readdirSync(__dirname).filter(
-  (file) => file.endsWith('.routes.js')
+  (file) => file.endsWith('.routes.js') && file !== 'index.routes.js'
 );
 
 for (const file of routeFiles) {
