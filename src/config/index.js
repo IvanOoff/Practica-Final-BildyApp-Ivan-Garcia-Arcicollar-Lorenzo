@@ -14,7 +14,12 @@ const config = {
   cloudinaryCloudName: process.env.CLOUDINARY_CLOUD_NAME,
   cloudinaryApiKey: process.env.CLOUDINARY_API_KEY,
   cloudinaryApiSecret: process.env.CLOUDINARY_API_SECRET,
-  slackWebhookUrl: process.env.SLACK_WEBHOOK_URL
+  slackWebhookUrl: process.env.SLACK_WEBHOOK_URL,
+  smtpHost: process.env.SMTP_HOST,
+  smtpPort: parseInt(process.env.SMTP_PORT, 10) || 587,
+  smtpUser: process.env.SMTP_USER,
+  smtpPass: process.env.SMTP_PASS,
+  emailFrom: process.env.EMAIL_FROM || 'noreply@bildyapp.com'
 };
 
 const dbConnect = async () => {
