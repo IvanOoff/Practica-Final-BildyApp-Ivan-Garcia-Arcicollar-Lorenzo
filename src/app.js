@@ -5,10 +5,12 @@ import helmet from 'helmet';
 import cors from 'cors';
 import rateLimit from 'express-rate-limit';
 import mongoose from 'mongoose';
+import swaggerUi from 'swagger-ui-express';
 
 import routes from './routes/index.js';
 import { errorHandler, notFound } from './middleware/error-handler.js';
 import config from './config/index.js';
+import swaggerSpec from './config/swagger.js';
 
 const app = express();
 
@@ -43,6 +45,8 @@ app.get('/health', (req, res) => {
     timestamp: new Date().toISOString()
   });
 });
+
+app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 
 app.use('/api', routes);
 
