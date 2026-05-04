@@ -10,7 +10,11 @@ const config = {
   jwtSecret: process.env.JWT_SECRET,
   jwtExpiresIn: process.env.JWT_EXPIRES_IN || '15m',
   refreshTokenExpiresIn: process.env.REFRESH_TOKEN_EXPIRES_IN || '7d',
-  corsOrigin: process.env.CORS_ORIGIN || 'http://localhost:5173'
+  corsOrigin: process.env.CORS_ORIGIN || 'http://localhost:5173',
+  cloudinaryCloudName: process.env.CLOUDINARY_CLOUD_NAME,
+  cloudinaryApiKey: process.env.CLOUDINARY_API_KEY,
+  cloudinaryApiSecret: process.env.CLOUDINARY_API_SECRET,
+  slackWebhookUrl: process.env.SLACK_WEBHOOK_URL
 };
 
 const dbConnect = async () => {
