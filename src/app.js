@@ -4,6 +4,7 @@ import express from 'express';
 import helmet from 'helmet';
 import cors from 'cors';
 import rateLimit from 'express-rate-limit';
+import mongoose from 'mongoose';
 
 import routes from './routes/index.js';
 import { errorHandler, notFound } from './middleware/error-handler.js';
@@ -27,7 +28,20 @@ app.use(rateLimit({
 }));
 
 app.get('/health', (req, res) => {
-  res.json({ status: 'ok', timestamp: new Date().toISOString() });
+  const dbState = mongoose.connection.readyState;
+  const dbStatus = {
+    0: 'disconnected',
+    1: 'connected',
+    2: 'connecting',
+    3: 'disconnecting'
+  };
+
+  res.json({
+    status: 'ok',
+    db: dbStatus[dbState] || 'unknown',
+    uptime: process.uptime(),
+    timestamp: new Date().toISOString()
+  });
 });
 
 app.use('/api', routes);

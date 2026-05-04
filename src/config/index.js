@@ -32,11 +32,9 @@ mongoose.connection.on('disconnected', () => {
   console.warn('Desconectado de MongoDB....');
 });
 
-process.on('SIGINT', async () => {
-  await mongoose.connection.close();
-  console.log('CONEXION A MONGODB CERRADA!!');
-  process.exit(0);
+mongoose.connection.on('error', (err) => {
+  console.error('Error en MongoDB:', err.message);
 });
 
-export { config, dbConnect };
+export { config, dbConnect, mongoose };
 export default config;
