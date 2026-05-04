@@ -15,11 +15,13 @@ export const validatorRegister = z.object({
     name: z.string()
       .min(2, 'Mínimo 2 caracteres')
       .max(100, 'Máximo 100 caracteres')
-      .trim(),
+      .trim()
+      .optional(),
     lastName: z.string()
       .min(2, 'Mínimo 2 caracteres')
       .max(100, 'Máximo 100 caracteres')
       .trim()
+      .optional()
   })
 });
 
@@ -54,7 +56,7 @@ export const validatorUpdateProfile = z.object({
       .max(100, 'Máximo 100 caracteres')
       .trim()
       .optional(),
-    NIF: z.string()
+    nif: z.string()
       .regex(/^[0-9]{8}[A-Z]$/, 'NIF no válido')
       .optional()
   }).refine(

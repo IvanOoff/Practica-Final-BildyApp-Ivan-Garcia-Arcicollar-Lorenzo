@@ -17,14 +17,14 @@ const userSchema = new mongoose.Schema(
     },
     name: {
       type: String,
-      required: [true, 'NOMBRE REQUERIDO'],
+      required: false,
       trim: true,
       minlength: 2,
       maxlength: 100
     },
     lastName: {
       type: String,
-      required: [true,'APELLIDO REQUERIDO'],
+      required: false,
       trim: true,
       minlength: 2,
       maxlength: 100
