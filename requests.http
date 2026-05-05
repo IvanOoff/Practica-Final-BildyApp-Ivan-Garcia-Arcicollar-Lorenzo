@@ -1,9 +1,16 @@
-@baseUrl = http://localhost:3000/api/user
+@baseUrl = http://localhost:3000/api
 
 // =========================================
-// 1. REGISTER - Registrar usuario
+// HEALTH CHECK
 // =========================================
-POST {{baseUrl}}/register
+GET http://localhost:3000/health
+
+// =========================================
+// USER ENDPOINTS
+// =========================================
+
+// 1. REGISTER
+POST {{baseUrl}}/user/register
 Content-Type: application/json
 
 {
@@ -13,22 +20,17 @@ Content-Type: application/json
   "lastName": "Perez"
 }
 
-// =========================================
-// 2. VALIDATE - Validar email
-// COPIA EL CODIGO DE LA TERMINAL DEL SERVIDOR
-// =========================================
-PUT {{baseUrl}}/validation
+// 2. VALIDATE
+PUT {{baseUrl}}/user/validation
 Content-Type: application/json
-Authorization: Bearer <PEGA_TOKEN_AQUI>
+Authorization: Bearer <TOKEN>
 
 {
   "code": "123456"
 }
 
-// =========================================
-// 3. LOGIN - Iniciar sesion
-// =========================================
-POST {{baseUrl}}/login
+// 3. LOGIN
+POST {{baseUrl}}/user/login
 Content-Type: application/json
 
 {
@@ -36,17 +38,13 @@ Content-Type: application/json
   "password": "TestPass123"
 }
 
-// =========================================
-// 4. GET ME - Obtener usuario autenticado
-// =========================================
-GET {{baseUrl}}
-Authorization: Bearer <PEGA_TOKEN_AQUI>
+// 4. GET ME
+GET {{baseUrl}}/user
+Authorization: Bearer <TOKEN>
 
-// =========================================
-// 5. UPDATE PROFILE - Actualizar perfil
-// =========================================
-PUT {{baseUrl}}/register
-Authorization: Bearer <PEGA_TOKEN_AQUI>
+// 5. UPDATE PROFILE
+PUT {{baseUrl}}/user/register
+Authorization: Bearer <TOKEN>
 Content-Type: application/json
 
 {
@@ -54,106 +52,208 @@ Content-Type: application/json
   "lastName": "Perez Garcia"
 }
 
-// =========================================
-// 6. CHANGE PASSWORD - Cambiar contrasena
-// =========================================
-PUT {{baseUrl}}/password
-Authorization: Bearer <PEGA_TOKEN_AQUI>
-Content-Type: application/json
-
-{
-  "currentPassword": "TestPass123",
-  "newPassword": "NuevaPass123"
-}
-
-// =========================================
-// 7. CREATE COMPANY (no freelance)
-// =========================================
-PATCH {{baseUrl}}/company
-Authorization: Bearer <PEGA_TOKEN_AQUI>
+// 6. CREATE COMPANY
+PATCH {{baseUrl}}/user/company
+Authorization: Bearer <TOKEN>
 Content-Type: application/json
 
 {
   "isFreelance": false,
   "name": "Mi Empresa SL",
-  "cif": "12345678A",
+  "cif": "12345678A"
+}
+
+// =========================================
+// CLIENT ENDPOINTS
+// =========================================
+
+// 7. CREATE CLIENT
+POST {{baseUrl}}/client
+Authorization: Bearer <TOKEN>
+Content-Type: application/json
+
+{
+  "name": "Cliente Ejemplo",
+  "cif": "B87654321",
+  "email": "cliente@ejemplo.com",
+  "phone": "612345678",
   "address": {
-    "street": "Calle Mayor",
-    "number": "1",
-    "postal": "28001",
+    "street": "Calle del Cliente",
+    "number": "42",
+    "postal": "28002",
     "city": "Madrid",
     "province": "Madrid"
   }
 }
 
-// =========================================
-// 8. GET COMPANY - Ver empresa
-// =========================================
-GET {{baseUrl}}/company
-Authorization: Bearer <PEGA_TOKEN_AQUI>
+// 8. LIST CLIENTS (with pagination)
+GET {{baseUrl}}/client?page=1&limit=10&name=Cliente
+Authorization: Bearer <TOKEN>
 
-// =========================================
-// 9. UPDATE COMPANY - Actualizar empresa
-// =========================================
-PUT {{baseUrl}}/company
-Authorization: Bearer <PEGA_TOKEN_AQUI>
+// 9. GET CLIENT
+GET {{baseUrl}}/client/<CLIENT_ID>
+Authorization: Bearer <TOKEN>
+
+// 10. UPDATE CLIENT
+PUT {{baseUrl}}/client/<CLIENT_ID>
+Authorization: Bearer <TOKEN>
 Content-Type: application/json
 
 {
-  "name": "Empresa Actualizada SL"
+  "name": "Cliente Actualizado",
+  "phone": "621987654"
 }
 
-// =========================================
-// 10. UPLOAD LOGO - Subir logo
-// =========================================
-PATCH {{baseUrl}}/logo
-Authorization: Bearer <PEGA_TOKEN_AQUI>
-Content-Type: multipart/form-data
+// 11. DELETE CLIENT (soft)
+DELETE {{baseUrl}}/client/<CLIENT_ID>?permanent=false
+Authorization: Bearer <TOKEN>
 
-file: ./logo.png
+// 12. LIST ARCHIVED CLIENTS
+GET {{baseUrl}}/client/archived
+Authorization: Bearer <TOKEN>
+
+// 13. RESTORE CLIENT
+PATCH {{baseUrl}}/client/<CLIENT_ID>/restore
+Authorization: Bearer <TOKEN>
 
 // =========================================
-// 11. INVITE USER - Invitar usuario
+// PROJECT ENDPOINTS
 // =========================================
-POST {{baseUrl}}/invite
-Authorization: Bearer <PEGA_TOKEN_AQUI>
+
+// 14. CREATE PROJECT
+POST {{baseUrl}}/project
+Authorization: Bearer <TOKEN>
 Content-Type: application/json
 
 {
-  "email": "colaborador@test.com",
-  "password": "PassInvitado123",
-  "name": "Colaborador",
-  "lastName": "Nuevo"
+  "name": "Proyecto Ejemplo",
+  "projectCode": "PRJ-001",
+  "client": "<CLIENT_ID>",
+  "description": "Descripcion del proyecto",
+  "email": "proyecto@ejemplo.com"
 }
 
-// =========================================
-// 12. REFRESH TOKEN - Renovar token
-// =========================================
-POST {{baseUrl}}/refresh
+// 15. LIST PROJECTS (with pagination)
+GET {{baseUrl}}/project?page=1&limit=10&client=<CLIENT_ID>&active=true
+Authorization: Bearer <TOKEN>
+
+// 16. GET PROJECT
+GET {{baseUrl}}/project/<PROJECT_ID>
+Authorization: Bearer <TOKEN>
+
+// 17. UPDATE PROJECT
+PUT {{baseUrl}}/project/<PROJECT_ID>
+Authorization: Bearer <TOKEN>
 Content-Type: application/json
 
 {
-  "refreshToken": "<PEGA_REFRESH_TOKEN_AQUI>"
+  "name": "Proyecto Actualizado",
+  "description": "Nueva descripcion"
 }
 
-// =========================================
-// 13. LOGOUT - Cerrar sesion
-// =========================================
-POST {{baseUrl}}/logout
-Authorization: Bearer <PEGA_TOKEN_AQUI>
+// 18. CHANGE PROJECT STATUS
+PATCH {{baseUrl}}/project/<PROJECT_ID>/status
+Authorization: Bearer <TOKEN>
 Content-Type: application/json
 
 {
-  "refreshToken": "<PEGA_REFRESH_TOKEN_AQUI>"
+  "status": "in_progress"
 }
 
-// =========================================
-// 14. DELETE (soft delete)
-// =========================================
-DELETE {{baseUrl}}
-Authorization: Bearer <PEGA_TOKEN_AQUI>
+// 19. DELETE PROJECT (soft)
+DELETE {{baseUrl}}/project/<PROJECT_ID>?permanent=false
+Authorization: Bearer <TOKEN>
+
+// 20. LIST ARCHIVED PROJECTS
+GET {{baseUrl}}/project/archived
+Authorization: Bearer <TOKEN>
+
+// 21. RESTORE PROJECT
+PATCH {{baseUrl}}/project/<PROJECT_ID>/restore
+Authorization: Bearer <TOKEN>
 
 // =========================================
-// HEALTH CHECK
+// DELIVERY NOTE ENDPOINTS
 // =========================================
-GET http://localhost:3000/health
+
+// 22. CREATE DELIVERY NOTE (hours type)
+POST {{baseUrl}}/deliverynote
+Authorization: Bearer <TOKEN>
+Content-Type: application/json
+
+{
+  "project": "<PROJECT_ID>",
+  "client": "<CLIENT_ID>",
+  "type": "hours",
+  "date": "2024-01-15",
+  "description": "Trabajos de desarrollo",
+  "notes": "Notas opcionales",
+  "items": [
+    {
+      "description": "Horas de desarrollo",
+      "quantity": 40,
+      "unit": "hours",
+      "price": 45
+    }
+  ],
+  "taxRate": 21
+}
+
+// 23. CREATE DELIVERY NOTE (materials type)
+POST {{baseUrl}}/deliverynote
+Authorization: Bearer <TOKEN>
+Content-Type: application/json
+
+{
+  "project": "<PROJECT_ID>",
+  "client": "<CLIENT_ID>",
+  "type": "materials",
+  "date": "2024-01-15",
+  "description": "Entrega de materiales",
+  "items": [
+    {
+      "description": "Cemento",
+      "quantity": 100,
+      "unit": "kg",
+      "price": 0.15
+    },
+    {
+      "description": "Arena",
+      "quantity": 200,
+      "unit": "kg",
+      "price": 0.08
+    }
+  ],
+  "taxRate": 21
+}
+
+// 24. LIST DELIVERY NOTES (with pagination)
+GET {{baseUrl}}/deliverynote?page=1&limit=10&project=<PROJECT_ID>&type=hours&signed=false
+Authorization: Bearer <TOKEN>
+
+// 25. GET DELIVERY NOTE
+GET {{baseUrl}}/deliverynote/<DELIVERYNOTE_ID>
+Authorization: Bearer <TOKEN>
+
+// 26. DOWNLOAD PDF
+GET {{baseUrl}}/deliverynote/pdf/<DELIVERYNOTE_ID>
+Authorization: Bearer <TOKEN>
+
+// 27. SIGN DELIVERY NOTE
+PATCH {{baseUrl}}/deliverynote/<DELIVERYNOTE_ID>/sign
+Authorization: Bearer <TOKEN>
+Content-Type: application/json
+
+{
+  "signedBy": "Juan Cliente"
+}
+
+// 28. DELETE DELIVERY NOTE (only if not signed)
+DELETE {{baseUrl}}/deliverynote/<DELIVERYNOTE_ID>
+Authorization: Bearer <TOKEN>
+
+// =========================================
+// VARIABLES
+// =========================================
+// Reemplaza <TOKEN> con el token del login
+// Reemplaza <CLIENT_ID>, <PROJECT_ID>, <DELIVERYNOTE_ID> con IDs reales

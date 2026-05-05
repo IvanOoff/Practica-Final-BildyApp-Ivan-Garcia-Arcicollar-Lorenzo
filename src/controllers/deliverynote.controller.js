@@ -4,6 +4,7 @@ import Client from '../models/client.model.js';
 import { AppError } from '../utils/AppError.js';
 import { uploadImage } from '../services/storage.service.js';
 import { getIO } from '../config/socket.js';
+import { generateDeliveryNotePdf } from '../services/pdf.service.js';
 
 const generateSequentialNumber = async (companyId) => {
   const year = new Date().getFullYear();
@@ -103,10 +104,10 @@ export const getDeliveryNotesCtrl = async (req, res, next) => {
     res.json({
       data: deliveryNotes,
       pagination: {
-        page: parseInt(page),
-        limit: parseInt(limit),
-        total,
-        pages: Math.ceil(total / parseInt(limit))
+        currentPage: parseInt(page),
+        totalPages: Math.ceil(total / parseInt(limit)),
+        totalItems: total,
+        itemsPerPage: parseInt(limit)
       }
     });
   } catch (err) {
@@ -276,7 +277,11 @@ export const getDeliveryNotePDFCtrl = async (req, res, next) => {
       throw AppError.notFound('ALBARAN');
     }
 
-    res.json({ data: deliveryNote });
+    const pdfBuffer = await generateDeliveryNotePdf(deliveryNote);
+
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', `attachment; filename=albaran-${deliveryNote.sequentialNumber}.pdf`);
+    res.send(pdfBuffer);
   } catch (err) {
     next(err);
   }

@@ -4,7 +4,9 @@ import {
   getClientsCtrl,
   getClientCtrl,
   updateClientCtrl,
-  deleteClientCtrl
+  deleteClientCtrl,
+  getArchivedClientsCtrl,
+  restoreClientCtrl
 } from '../controllers/client.controller.js';
 import { validate } from '../middleware/validate.js';
 import authMiddleware from '../middleware/auth.middleware.js';
@@ -72,6 +74,25 @@ router.get('/', authMiddleware, getClientsCtrl);
 
 /**
  * @openapi
+ * /api/client/archived:
+ *   get:
+ *     tags: [Clients]
+ *     summary: Listar clientes archivados
+ *     security: [{ bearerAuth: [] }]
+ *     parameters:
+ *       - in: query
+ *         name: page
+ *         schema: { type: integer, default: 1 }
+ *       - in: query
+ *         name: limit
+ *         schema: { type: integer, default: 10 }
+ *     responses:
+ *       200: { description: Lista de clientes archivados }
+ */
+router.get('/archived', authMiddleware, getArchivedClientsCtrl);
+
+/**
+ * @openapi
  * /api/client/{id}:
  *   get:
  *     tags: [Clients]
@@ -135,5 +156,23 @@ router.put('/:id', authMiddleware, validate(updateClientSchema), updateClientCtr
  *       200: { description: Cliente eliminado }
  */
 router.delete('/:id', authMiddleware, deleteClientCtrl);
+
+/**
+ * @openapi
+ * /api/client/{id}/restore:
+ *   patch:
+ *     tags: [Clients]
+ *     summary: Restaurar cliente archivado
+ *     security: [{ bearerAuth: [] }]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema: { type: string }
+ *     responses:
+ *       200: { description: Cliente restaurado }
+ *       404: { description: Cliente no encontrado }
+ */
+router.patch('/:id/restore', authMiddleware, restoreClientCtrl);
 
 export default router;

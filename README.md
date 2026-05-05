@@ -4,127 +4,193 @@
 
 ---
 
-API RESTful para la gestión de usuarios y compañías de la aplicación **BildyApp**.
+API RESTful para la gestión de **albaranes** (partes de horas o materiales) entre clientes y proveedores.
 
-### Tecnologias
+### Tecnologías
 
 - **Node.js 22+** - Runtime con soporte ESM nativo
-- **Express 5** - Framework web con manejo async automático
+- **Express 5** - Framework web
 - **MongoDB Atlas** + **Mongoose 8** - Base de datos NoSQL
 - **JWT** - Autenticación con access tokens y refresh tokens
-- **Zod** - Validación de datos con transformaciones
-- **bcryptjs** - Hash seguro de contraseñas
-- **express-mongo-sanitize** - Prevención de inyección NoSQL
-- **Helmet** - Headers de seguridad HTTP
-- **Multer** - Gestión de subida de archivos
+- **Zod** - Validación de datos
+- **Socket.IO** - WebSockets para tiempo real
+- **pdfkit** - Generación de PDFs
+- **Cloudinary** - Almacenamiento en la nube
+- **Nodemailer** - Envío de emails
+- **Docker** - Contenedores
 
 ---
 
 ## Requisitos Previos
 
 - Node.js 22.11.0 o superior
-- Cuenta gratuita en [MongoDB Atlas](https://www.mongodb.com/atlas)
+- Cuenta en [MongoDB Atlas](https://www.mongodb.com/atlas)
+- Docker y Docker Compose (opcional)
 - Git
 
 ---
 
-## Instalacion
+## Instalación
 
 ```bash
-# 1. Clonar el repositorio
-git clone https://github.com/IvanOoff/Practica-Intermedia-BildyApp-Ivan-Garcia-Arcicollar-Lorenzo.git
+# Clonar el repositorio
+git clone https://github.com/IvanOoff/Practica-Final-BildyApp-Ivan-Garcia-Arcicollar-Lorenzo.git
 cd bildyapp-api
 
-# 2. Instalar dependencias
+# Instalar dependencias
 npm install
 
-# 3. Crear archivo .env desde el ejemplo
+# Crear archivo .env desde el ejemplo
 cp .env.example .env
 ```
 
 ---
 
-## Configuracion
+## Configuración
 
-Editar el archivo `.env` con tus datos reales:
+Editar `.env` con tus datos reales:
 
 ```env
 NODE_ENV=development
 PORT=3000
-DB_URI=mongodb+srv://<tu_usuario>:<tu_password>@<tu_cluster>.mongodb.net/bildyapp?retryWrites=true&w=majority
-JWT_SECRET=<tu_secret_de_32_caracteres_minimo>
+DB_URI=mongodb+srv://<usuario>:<password>@<cluster>.mongodb.net/bildyapp
+JWT_SECRET=<secret_de_32_caracteres_minimo>
 JWT_EXPIRES_IN=15m
 REFRESH_TOKEN_EXPIRES_IN=7d
 CORS_ORIGIN=http://localhost:5173
-```
 
-**Generar JWT_SECRET seguro:**
-```bash
-node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
+# Cloudinary
+CLOUDINARY_CLOUD_NAME=<cloud_name>
+CLOUDINARY_API_KEY=<api_key>
+CLOUDINARY_API_SECRET=<api_secret>
+
+# Slack (para errores 5XX)
+SLACK_WEBHOOK_URL=https://hooks.slack.com/services/xxx/yyy/zzz
+
+# Email
+SMTP_HOST=smtp.gmail.com
+SMTP_PORT=587
+SMTP_USER=<tu_email@gmail.com>
+SMTP_PASS=<app_password>
+EMAIL_FROM=noreply@bildyapp.com
 ```
 
 ---
 
-## Ejecucion
+## Ejecución
 
 ```bash
-# Desarrollo (con --watch para recargar automáticamente)
+# Desarrollo (con --watch)
 npm run dev
 
 # Producción
 npm start
-```
 
-El servidor estará disponible en: **http://localhost:3000**
+# Docker
+docker compose up -d
+```
 
 ---
 
-## Endpoints
+## Endpoints Principales
 
-### Autenticacion
+### Autenticación
 
-| Metodo | Ruta | Descripcion | Auth |
-|--------|------|-------------|------|
-| POST | `/api/user/register` | Registro de usuario | No |
-| PUT | `/api/user/validation` | Validar email | Si |
-| POST | `/api/user/login` | Iniciar sesion | No |
-| POST | `/api/user/refresh` | Renovar access token | No |
-| POST | `/api/user/logout` | Cerrar sesion | Si |
+| Método | Ruta | Descripción |
+|--------|------|-------------|
+| POST | `/api/user/register` | Registro |
+| PUT | `/api/user/validation` | Validar email |
+| POST | `/api/user/login` | Login |
+| POST | `/api/user/refresh` | Renovar token |
 
-### Usuario
+### Clientes
 
-| Metodo | Ruta | Descripcion | Auth |
-|--------|------|-------------|------|
-| GET | `/api/user` | Obtener usuario autenticado | Si |
-| PUT | `/api/user/register` | Actualizar perfil | Si |
-| PUT | `/api/user/password` | Cambiar contrasena | Si |
-| DELETE | `/api/user` | Eliminar cuenta | Si |
-| PATCH | `/api/user/company` | Crear/unirse a empresa | Si |
-| PATCH | `/api/user/company/join` | Unirse a empresa existente | Si |
-| GET | `/api/user/company` | Ver empresa | Si |
-| PUT | `/api/user/company` | Actualizar empresa | Si |
-| PATCH | `/api/user/logo` | Subir logo de empresa | Si |
-| POST | `/api/user/invite` | Invitar usuario a empresa | Si |
+| Método | Ruta | Descripción |
+|--------|------|-------------|
+| POST | `/api/client` | Crear cliente |
+| GET | `/api/client` | Listar (paginación, filtros) |
+| GET | `/api/client/:id` | Obtener uno |
+| PUT | `/api/client/:id` | Actualizar |
+| DELETE | `/api/client/:id` | Eliminar (soft/hard) |
+| GET | `/api/client/archived` | Listar archivados |
+| PATCH | `/api/client/:id/restore` | Restaurar |
+
+### Proyectos
+
+| Método | Ruta | Descripción |
+|--------|------|-------------|
+| POST | `/api/project` | Crear proyecto |
+| GET | `/api/project` | Listar (paginación, filtros) |
+| GET | `/api/project/:id` | Obtener uno |
+| PUT | `/api/project/:id` | Actualizar |
+| PATCH | `/api/project/:id/status` | Cambiar estado |
+| DELETE | `/api/project/:id` | Eliminar (soft/hard) |
+| GET | `/api/project/archived` | Listar archivados |
+| PATCH | `/api/project/:id/restore` | Restaurar |
+
+### Albaranes
+
+| Método | Ruta | Descripción |
+|--------|------|-------------|
+| POST | `/api/deliverynote` | Crear albarán |
+| GET | `/api/deliverynote` | Listar (paginación, filtros) |
+| GET | `/api/deliverynote/:id` | Obtener uno |
+| GET | `/api/deliverynote/pdf/:id` | Descargar PDF |
+| PATCH | `/api/deliverynote/:id/sign` | Firmar |
+| DELETE | `/api/deliverynote/:id` | Eliminar |
+
+### Sistema
+
+| Método | Ruta | Descripción |
+|--------|------|-------------|
+| GET | `/health` | Health check |
+
+---
+
+## Documentación
+
+Swagger disponible en: **http://localhost:3000/api-docs**
 
 ---
 
 ## Testing
 
-Usar el archivo `requests.http` con la extension **REST Client** en VS Code, o importar en **Postman/Thunder Client**.
+```bash
+# Ejecutar tests
+npm test
 
-### Registro y Login
+# Con coverage
+npm run test:coverage
+```
+
+---
+
+## Docker
 
 ```bash
-# Registro
-curl -X POST http://localhost:3000/api/user/register \
-  -H "Content-Type: application/json" \
-  -d '{"email":"test@test.com","password":"TestPass123","name":"Juan","lastName":"Perez"}'
+# Construir imagen
+docker build -t bildyapp-api .
 
-# Login
-curl -X POST http://localhost:3000/api/user/login \
-  -H "Content-Type: application/json" \
-  -d '{"email":"test@test.com","password":"TestPass123"}'
+# Ejecutar con docker-compose (incluye MongoDB)
+docker compose up -d
+
+# Ver logs
+docker compose logs -f
+
+# Detener
+docker compose down
 ```
+
+---
+
+## Eventos en Tiempo Real (Socket.IO)
+
+Eventos emitidos a la sala de la compañía:
+
+- `deliverynote:new` - Nuevo albarán creado
+- `deliverynote:signed` - Albarán firmado
+- `client:new` - Nuevo cliente
+- `project:new` - Nuevo proyecto
 
 ---
 
@@ -133,63 +199,22 @@ curl -X POST http://localhost:3000/api/user/login \
 ```
 bildyapp-api/
 ├── src/
-│   ├── config/
-│   │   └── index.js          # Configuración y conexión MongoDB
-│   ├── controllers/
-│   │   └── user.controller.js # Lógica de negocio
-│   ├── middleware/
-│   │   ├── auth.middleware.js # Verificación JWT
-│   │   ├── error-handler.js   # Manejo global de errores
-│   │   ├── role.middleware.js # Autorización por roles
-│   │   ├── upload.js          # Configuración Multer
-│   │   └── validate.js        # Validación Zod
-│   ├── models/
-│   │   ├── Company.js         # Modelo de empresa
-│   │   ├── RefreshToken.js    # Modelo de refresh tokens
-│   │   └── User.js            # Modelo de usuario
-│   ├── routes/
-│   │   ├── index.js           # Agregador de rutas
-│   │   └── user.routes.js     # Rutas de usuario
-│   ├── services/
-│   │   └── notification.service.js # EventEmitter
-│   ├── utils/
-│   │   ├── AppError.js        # Clase de errores
-│   │   ├── handleJwt.js       # Utilidades JWT
-│   │   └── handlePassword.js  # Utilidades bcrypt
-│   ├── validators/
-│   │   └── user.validator.js   # Schemas Zod
-│   ├── app.js                 # Configuración Express
-│   └── index.js               # Punto de entrada
-├── uploads/                   # Archivos subidos
-├── .env                       # Variables de entorno (no subir)
-├── .env.example               # Template de variables
-├── .gitignore
-├── package.json
-├── requests.http              # Ejemplos de endpoints
-└── README.md
+│   ├── config/          # Configuración
+│   ├── controllers/     # Controladores
+│   ├── middleware/      # Middlewares
+│   ├── models/          # Modelos Mongoose
+│   ├── routes/          # Rutas
+│   ├── services/        # Servicios (PDF, Storage, Mail, Logger)
+│   ├── utils/           # Utilidades
+│   ├── validators/      # Schemas Zod
+│   ├── app.js           # Express app
+│   └── index.js         # Entry point
+├── tests/               # Tests Jest
+├── Dockerfile
+├── docker-compose.yml
+├── .env.example
+└── requests.http       # Ejemplos REST Client
 ```
-
----
-
-## Eventos EventEmitter
-
-La API emite eventos para seguimiento:
-
-- `user.registered` - Nuevo usuario registrado
-- `user.validated` - Email validado
-- `user.deleted` - Usuario eliminado
-- `user.invited` - Usuario invitado a empresa
-
----
-
-## Seguridad
-
-- Passwords hasheados con bcrypt (salt 10)
-- Tokens JWT con expiración corta (15min)
-- Refresh tokens opacos almacenados en BD
-- Prevención de inyección NoSQL con express-mongo-sanitize
-- Headers de seguridad con Helmet
-- Rate limiting configurado
 
 ---
 

@@ -31,17 +31,33 @@ export const createProjectCtrl = async (req, res, next) => {
 
 export const getProjectsCtrl = async (req, res, next) => {
   try {
-    const { client, status } = req.query;
+    const { page = 1, limit = 10, client, name, active, sort = '-createdAt' } = req.query;
 
     const filter = { company: req.user.company, deleted: false };
     if (client) filter.client = client;
-    if (status) filter.status = status;
+    if (active !== undefined) filter.active = active === 'true';
+    if (name) filter.name = { $regex: name, $options: 'i' };
 
-    const projects = await Project.find(filter)
-      .populate('client', 'name email')
-      .sort({ createdAt: -1 });
+    const skip = (parseInt(page) - 1) * parseInt(limit);
 
-    res.json({ data: projects });
+    const [projects, total] = await Promise.all([
+      Project.find(filter)
+        .populate('client', 'name email')
+        .sort(sort.replace('-', ''))
+        .skip(skip)
+        .limit(parseInt(limit)),
+      Project.countDocuments(filter)
+    ]);
+
+    res.json({
+      data: projects,
+      pagination: {
+        currentPage: parseInt(page),
+        totalPages: Math.ceil(total / parseInt(limit)),
+        totalItems: total,
+        itemsPerPage: parseInt(limit)
+      }
+    });
   } catch (err) {
     next(err);
   }
@@ -125,6 +141,54 @@ export const deleteProjectCtrl = async (req, res, next) => {
     }
 
     res.json({ message: 'PROYECTO ELIMINADO' });
+  } catch (err) {
+    next(err);
+  }
+};
+
+export const getArchivedProjectsCtrl = async (req, res, next) => {
+  try {
+    const { page = 1, limit = 10, sort = '-deletedAt' } = req.query;
+
+    const filter = { company: req.user.company, deleted: true };
+    const skip = (parseInt(page) - 1) * parseInt(limit);
+
+    const [projects, total] = await Promise.all([
+      Project.find(filter)
+        .populate('client', 'name email')
+        .sort(sort.replace('-', ''))
+        .skip(skip)
+        .limit(parseInt(limit)),
+      Project.countDocuments(filter)
+    ]);
+
+    res.json({
+      data: projects,
+      pagination: {
+        currentPage: parseInt(page),
+        totalPages: Math.ceil(total / parseInt(limit)),
+        totalItems: total,
+        itemsPerPage: parseInt(limit)
+      }
+    });
+  } catch (err) {
+    next(err);
+  }
+};
+
+export const restoreProjectCtrl = async (req, res, next) => {
+  try {
+    const project = await Project.findOneAndUpdate(
+      { _id: req.params.id, company: req.user.company, deleted: true },
+      { deleted: false, deletedAt: null },
+      { new: true, runValidators: true }
+    );
+
+    if (!project) {
+      throw AppError.notFound('PROYECTO');
+    }
+
+    res.json({ data: project, message: 'PROYECTO RESTAURADO' });
   } catch (err) {
     next(err);
   }

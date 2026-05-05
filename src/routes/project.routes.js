@@ -5,7 +5,9 @@ import {
   getProjectCtrl,
   updateProjectCtrl,
   changeStatusProjectCtrl,
-  deleteProjectCtrl
+  deleteProjectCtrl,
+  getArchivedProjectsCtrl,
+  restoreProjectCtrl
 } from '../controllers/project.controller.js';
 import { validate } from '../middleware/validate.js';
 import authMiddleware from '../middleware/auth.middleware.js';
@@ -77,6 +79,25 @@ router.post('/', authMiddleware, validate(createProjectSchema), createProjectCtr
  *       200: { description: Lista de proyectos }
  */
 router.get('/', authMiddleware, getProjectsCtrl);
+
+/**
+ * @openapi
+ * /api/project/archived:
+ *   get:
+ *     tags: [Projects]
+ *     summary: Listar proyectos archivados
+ *     security: [{ bearerAuth: [] }]
+ *     parameters:
+ *       - in: query
+ *         name: page
+ *         schema: { type: integer, default: 1 }
+ *       - in: query
+ *         name: limit
+ *         schema: { type: integer, default: 10 }
+ *     responses:
+ *       200: { description: Lista de proyectos archivados }
+ */
+router.get('/archived', authMiddleware, getArchivedProjectsCtrl);
 
 /**
  * @openapi
@@ -170,5 +191,23 @@ router.patch('/:id/status', authMiddleware, validate(changeStatusSchema), change
  *       200: { description: Proyecto eliminado }
  */
 router.delete('/:id', authMiddleware, deleteProjectCtrl);
+
+/**
+ * @openapi
+ * /api/project/{id}/restore:
+ *   patch:
+ *     tags: [Projects]
+ *     summary: Restaurar proyecto archivado
+ *     security: [{ bearerAuth: [] }]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema: { type: string }
+ *     responses:
+ *       200: { description: Proyecto restaurado }
+ *       404: { description: Proyecto no encontrado }
+ */
+router.patch('/:id/restore', authMiddleware, restoreProjectCtrl);
 
 export default router;

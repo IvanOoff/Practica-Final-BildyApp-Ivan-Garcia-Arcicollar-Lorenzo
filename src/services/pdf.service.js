@@ -13,8 +13,8 @@ export const generateDeliveryNotePdf = async (deliveryNote) => {
       doc.fontSize(20).text('ALBARAN', { align: 'center' });
       doc.moveDown();
       doc.fontSize(12).text(`Numero: ${deliveryNote.sequentialNumber || 'N/A'}`);
-      doc.text(`Fecha: ${new Date(deliveryNote.workDate).toLocaleDateString()}`);
-      doc.text(`Estado: ${deliveryNote.signed ? 'FIRMADO' : 'PENDIENTE'}`);
+      doc.text(`Fecha: ${new Date(deliveryNote.date).toLocaleDateString()}`);
+      doc.text(`Estado: ${deliveryNote.status === 'signed' ? 'FIRMADO' : 'PENDIENTE'}`);
       doc.moveDown();
 
       doc.fontSize(14).text('DATOS DEL CLIENTE', { underline: true });
@@ -36,31 +36,31 @@ export const generateDeliveryNotePdf = async (deliveryNote) => {
 
       doc.fontSize(14).text('DETALLE DEL TRABAJO', { underline: true });
       doc.fontSize(11);
-      doc.text(`Tipo: ${deliveryNote.format === 'hours' ? 'HORAS' : 'MATERIALES'}`);
+      doc.text(`Tipo: ${deliveryNote.type === 'hours' ? 'HORAS' : deliveryNote.type === 'materials' ? 'MATERIALES' : 'MIXTO'}`);
       doc.text(`Descripcion: ${deliveryNote.description || 'Sin descripcion'}`);
 
-      if (deliveryNote.format === 'hours') {
+      if (deliveryNote.items && deliveryNote.items.length > 0) {
         doc.moveDown(0.5);
-        doc.text('Horas trabajadas:');
-        if (deliveryNote.hours) {
-          doc.text(`  - ${deliveryNote.hours} horas`);
-        }
-        if (deliveryNote.workers && deliveryNote.workers.length > 0) {
-          deliveryNote.workers.forEach((w) => {
-            doc.text(`  - ${w.name}: ${w.hours} horas`);
-          });
-        }
-      } else {
+        doc.text('Items:');
+        let subtotal = 0;
+        deliveryNote.items.forEach((item, index) => {
+          const itemTotal = item.quantity * item.price;
+          subtotal += itemTotal;
+          doc.text(`  ${index + 1}. ${item.description} - ${item.quantity} ${item.unit} x ${item.price}€ = ${itemTotal}€`);
+        });
         doc.moveDown(0.5);
-        doc.text('Materiales entregados:');
-        doc.text(`  - ${deliveryNote.material || 'N/A'}`);
-        doc.text(`  - Cantidad: ${deliveryNote.quantity || 0} ${deliveryNote.unit || 'ud'}`);
+        const taxAmount = subtotal * (deliveryNote.taxRate / 100);
+        const total = subtotal + taxAmount;
+        doc.text(`Subtotal: ${subtotal.toFixed(2)}€`);
+        doc.text(`Impuestos (${deliveryNote.taxRate}%): ${taxAmount.toFixed(2)}€`);
+        doc.text(`Total: ${total.toFixed(2)}€`);
       }
 
-      if (deliveryNote.signed && deliveryNote.signatureUrl) {
+      if (deliveryNote.status === 'signed' && deliveryNote.signatureUrl) {
         doc.moveDown();
         doc.fontSize(14).text('FIRMA', { underline: true });
         doc.fontSize(10).text('Documento firmado por el cliente');
+        doc.text(`Firmado por: ${deliveryNote.signedBy || 'N/A'}`);
         doc.text(`Fecha firma: ${deliveryNote.signedAt ? new Date(deliveryNote.signedAt).toLocaleString() : 'N/A'}`);
       }
 
