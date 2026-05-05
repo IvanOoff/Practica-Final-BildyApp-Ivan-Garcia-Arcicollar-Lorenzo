@@ -109,6 +109,30 @@ router.get('/:id', authMiddleware, getDeliveryNoteCtrl);
 
 /**
  * @openapi
+ * /api/deliverynote/{id}/pdf:
+ *   get:
+ *     tags: [DeliveryNotes]
+ *     summary: Descargar PDF del albarán
+ *     security: [{ bearerAuth: [] }]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema: { type: string }
+ *     responses:
+ *       200:
+ *         description: PDF del albarán
+ *         content:
+ *           application/pdf:
+ *             schema:
+ *               type: string
+ *               format: binary
+ *       404: { description: Albarán no encontrado }
+ */
+router.get('/:id/pdf', authMiddleware, getDeliveryNotePDFCtrl);
+
+/**
+ * @openapi
  * /api/deliverynote/{id}:
  *   put:
  *     tags: [DeliveryNotes]
