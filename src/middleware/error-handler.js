@@ -1,5 +1,6 @@
 import mongoose from 'mongoose';
 import { AppError } from '../utils/AppError.js';
+import { logErrorToSlack } from '../services/logger.service.js';
 
 export const notFound = (req, res, next) => {
   next(AppError.notFound(`Ruta ${req.method} ${req.originalUrl}`));
@@ -67,6 +68,8 @@ export const errorHandler = (err, req, res, next) => {
       code: 'FILE_TOO_LARGE'
     });
   }
+
+  logErrorToSlack(err, req).catch(() => {});
 
   const isProduction = process.env.NODE_ENV === 'production';
   res.status(500).json({

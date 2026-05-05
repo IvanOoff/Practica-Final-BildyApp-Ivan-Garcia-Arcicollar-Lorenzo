@@ -1,7 +1,9 @@
 import DeliveryNote from '../models/deliveryNote.model.js';
 import Project from '../models/project.model.js';
+import Client from '../models/client.model.js';
 import { AppError } from '../utils/AppError.js';
-import userEvents from '../services/notification.service.js';
+import { uploadImage } from '../services/storage.service.js';
+import { getIO } from '../config/socket.js';
 
 const generateSequentialNumber = async (companyId) => {
   const year = new Date().getFullYear();
@@ -24,7 +26,7 @@ const generateSequentialNumber = async (companyId) => {
 
 export const createDeliveryNoteCtrl = async (req, res, next) => {
   try {
-    const { project, client, type, date, items, taxRate, notes } = req.body;
+    const { project, client, type, items, date, notes, taxRate } = req.body;
 
     const projectExists = await Project.findOne({
       _id: project,
@@ -35,19 +37,34 @@ export const createDeliveryNoteCtrl = async (req, res, next) => {
       throw AppError.notFound('PROYECTO');
     }
 
+    const clientExists = await Client.findOne({
+      _id: client,
+      company: req.user.company,
+      deleted: false
+    });
+    if (!clientExists) {
+      throw AppError.notFound('CLIENTE');
+    }
+
     const sequentialNumber = await generateSequentialNumber(req.user.company);
 
     const deliveryNote = await DeliveryNote.create({
+      user: req.user._id,
       company: req.user.company,
       project,
       client,
       sequentialNumber,
       type: type || 'hours',
-      date: date ? new Date(date) : Date.now(),
       items,
-      taxRate: taxRate || 21,
-      notes
+      date: date ? new Date(date) : new Date(),
+      notes,
+      taxRate: taxRate || 21
     });
+
+    try {
+      const io = getIO();
+      io.to(`company:${req.user.company}`).emit('deliverynote:new', { deliveryNote });
+    } catch (e) { /* Socket.IO not initialized in tests */ }
 
     res.status(201).json({ data: deliveryNote });
   } catch (err) {
@@ -57,19 +74,41 @@ export const createDeliveryNoteCtrl = async (req, res, next) => {
 
 export const getDeliveryNotesCtrl = async (req, res, next) => {
   try {
-    const { project, client, status } = req.query;
+    const { project, client, type, status, from, to, page = 1, limit = 10, sort = '-date' } = req.query;
 
     const filter = { company: req.user.company, deleted: false };
     if (project) filter.project = project;
     if (client) filter.client = client;
+    if (type) filter.type = type;
     if (status) filter.status = status;
 
-    const deliveryNotes = await DeliveryNote.find(filter)
-      .populate('client', 'name')
-      .populate('project', 'name')
-      .sort({ date: -1 });
+    if (from || to) {
+      filter.date = {};
+      if (from) filter.date.$gte = new Date(from);
+      if (to) filter.date.$lte = new Date(to);
+    }
 
-    res.json({ data: deliveryNotes });
+    const skip = (parseInt(page) - 1) * parseInt(limit);
+
+    const [deliveryNotes, total] = await Promise.all([
+      DeliveryNote.find(filter)
+        .populate('client', 'name email')
+        .populate('project', 'name')
+        .sort(sort)
+        .skip(skip)
+        .limit(parseInt(limit)),
+      DeliveryNote.countDocuments(filter)
+    ]);
+
+    res.json({
+      data: deliveryNotes,
+      pagination: {
+        page: parseInt(page),
+        limit: parseInt(limit),
+        total,
+        pages: Math.ceil(total / parseInt(limit))
+      }
+    });
   } catch (err) {
     next(err);
   }
@@ -81,8 +120,10 @@ export const getDeliveryNoteCtrl = async (req, res, next) => {
       _id: req.params.id,
       company: req.user.company,
       deleted: false
-    }).populate('client', 'name email')
-      .populate('project', 'name');
+    })
+      .populate('client', 'name email cif address')
+      .populate('project', 'name projectCode address')
+      .populate('user', 'name email');
 
     if (!deliveryNote) {
       throw AppError.notFound('ALBARAN');
@@ -110,13 +151,16 @@ export const updateDeliveryNoteCtrl = async (req, res, next) => {
       throw AppError.badRequest('NO SE PUEDE MODIFICAR UN ALBARAN FIRMADO');
     }
 
-    const updated = await DeliveryNote.findByIdAndUpdate(
-      req.params.id,
-      req.body,
-      { new: true, runValidators: true }
-    );
+    const allowedFields = ['type', 'items', 'date', 'notes', 'taxRate'];
+    allowedFields.forEach(field => {
+      if (req.body[field] !== undefined) {
+        deliveryNote[field] = req.body[field];
+      }
+    });
 
-    res.json({ data: updated });
+    await deliveryNote.save();
+
+    res.json({ data: deliveryNote });
   } catch (err) {
     next(err);
   }
@@ -124,7 +168,7 @@ export const updateDeliveryNoteCtrl = async (req, res, next) => {
 
 export const signDeliveryNoteCtrl = async (req, res, next) => {
   try {
-    const { signedBy } = req.body;
+    const { signedBy, signature } = req.body;
 
     const deliveryNote = await DeliveryNote.findOne({
       _id: req.params.id,
@@ -140,12 +184,23 @@ export const signDeliveryNoteCtrl = async (req, res, next) => {
       throw AppError.badRequest('YA ESTA FIRMADO');
     }
 
+    let signatureUrl = null;
+    if (signature) {
+      const signatureBuffer = Buffer.from(signature.split(',')[1], 'base64');
+      const result = await uploadImage(signatureBuffer, 'bildyapp/signatures');
+      signatureUrl = result.secure_url;
+    }
+
     deliveryNote.status = 'signed';
     deliveryNote.signedBy = signedBy;
     deliveryNote.signedAt = new Date();
+    deliveryNote.signatureUrl = signatureUrl;
     await deliveryNote.save();
 
-    userEvents.emit('deliverynote.signed', deliveryNote);
+    try {
+      const io = getIO();
+      io.to(`company:${req.user.company}`).emit('deliverynote:signed', { deliveryNote });
+    } catch (e) { /* Socket.IO not initialized in tests */ }
 
     res.json({ data: deliveryNote, message: 'ALBARAN FIRMADO' });
   } catch (err) {
@@ -168,7 +223,10 @@ export const sendDeliveryNoteCtrl = async (req, res, next) => {
     deliveryNote.status = 'sent';
     await deliveryNote.save();
 
-    userEvents.emit('deliverynote.sent', deliveryNote);
+    try {
+      const io = getIO();
+      io.to(`company:${req.user.company}`).emit('deliverynote:sent', { deliveryNote });
+    } catch (e) { /* Socket.IO not initialized in tests */ }
 
     res.json({ data: deliveryNote, message: 'ALBARAN ENVIADO' });
   } catch (err) {
@@ -180,16 +238,21 @@ export const deleteDeliveryNoteCtrl = async (req, res, next) => {
   try {
     const { permanent } = req.query;
 
+    const deliveryNote = await DeliveryNote.findOne({
+      _id: req.params.id,
+      company: req.user.company
+    });
+
+    if (!deliveryNote) {
+      throw AppError.notFound('ALBARAN');
+    }
+
     if (permanent === 'true') {
-      await DeliveryNote.findOneAndDelete({
-        _id: req.params.id,
-        company: req.user.company
-      });
+      await DeliveryNote.findByIdAndDelete(req.params.id);
     } else {
-      await DeliveryNote.findOneAndUpdate(
-        { _id: req.params.id, company: req.user.company },
-        { deleted: true, deletedAt: new Date() }
-      );
+      deliveryNote.deleted = true;
+      deliveryNote.deletedAt = new Date();
+      await deliveryNote.save();
     }
 
     res.json({ message: 'ALBARAN ELIMINADO' });
@@ -204,8 +267,10 @@ export const getDeliveryNotePDFCtrl = async (req, res, next) => {
       _id: req.params.id,
       company: req.user.company,
       deleted: false
-    }).populate('client', 'name email nif')
-      .populate('project', 'name');
+    })
+      .populate('client', 'name email cif address')
+      .populate('project', 'name projectCode address')
+      .populate('user', 'name email');
 
     if (!deliveryNote) {
       throw AppError.notFound('ALBARAN');

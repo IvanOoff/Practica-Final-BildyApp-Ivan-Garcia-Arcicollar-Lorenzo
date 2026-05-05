@@ -1,4 +1,5 @@
 import { z } from 'zod';
+
 const itemSchema = z.object({
   description: z.string()
     .min(1, 'LA DESCRIPCION ES REQUERIDA')
@@ -12,6 +13,7 @@ const itemSchema = z.object({
   price: z.number()
     .min(0, 'NO PUEDE SER NEGATIVO')
 });
+
 export const createDeliveryNoteSchema = z.object({
   body: z.object({
     project: z.string()
@@ -35,6 +37,7 @@ export const createDeliveryNoteSchema = z.object({
       .optional()
   })
 });
+
 export const updateDeliveryNoteSchema = z.object({
   body: z.object({
     type: z.enum(['hours', 'materials', 'mixed'])
@@ -59,10 +62,12 @@ export const updateDeliveryNoteSchema = z.object({
     { message: 'DEBE ENVIAR AL MENOS UN CAMPO' }
   )
 });
+
 export const signDeliveryNoteSchema = z.object({
   body: z.object({
     signedBy: z.string()
       .min(1, 'NOMBRE DE QUIEN FIRMA ES REQUERIDO')
-      .max(200, 'MAXIMO 200 CARACTERES')
+      .max(200, 'MAXIMO 200 CARACTERES'),
+    signature: z.string().optional()
   })
 });

@@ -1,4 +1,5 @@
 import mongoose from 'mongoose';
+
 const deliveryNoteItemSchema = new mongoose.Schema(
   {
     description: {
@@ -35,6 +36,11 @@ const deliveryNoteItemSchema = new mongoose.Schema(
 
 const deliveryNoteSchema = new mongoose.Schema(
   {
+    user: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User',
+      required: [true, 'EL USUARIO ES REQUERIDO']
+    },
     company: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'Company',
@@ -52,8 +58,7 @@ const deliveryNoteSchema = new mongoose.Schema(
     },
     sequentialNumber: {
       type: String,
-      required: [true, 'EL NUMERO SECUENCIAL ES REQUERIDO'],
-      unique: true
+      required: [true, 'EL NUMERO SECUENCIAL ES REQUERIDO']
     },
     type: {
       type: String,
@@ -94,11 +99,6 @@ const deliveryNoteSchema = new mongoose.Schema(
       type: Number,
       default: 0
     },
-    notes: {
-      type: String,
-      trim: true,
-      maxlength: [1000, 'MAXIMO 1000 CARACTERES']
-    },
     signedBy: {
       type: String,
       trim: true,
@@ -107,6 +107,19 @@ const deliveryNoteSchema = new mongoose.Schema(
     signedAt: {
       type: Date,
       default: null
+    },
+    signatureUrl: {
+      type: String,
+      default: null
+    },
+    pdfUrl: {
+      type: String,
+      default: null
+    },
+    notes: {
+      type: String,
+      trim: true,
+      maxlength: [1000, 'MAXIMO 1000 CARACTERES']
     },
     deleted: {
       type: Boolean,
@@ -123,17 +136,21 @@ const deliveryNoteSchema = new mongoose.Schema(
     versionKey: false
   }
 );
+
 deliveryNoteItemSchema.pre('save', function() {
   this.total = this.quantity * this.price;
 });
+
 deliveryNoteSchema.pre('save', function() {
   this.subtotal = this.items.reduce((sum, item) => sum + (item.quantity * item.price), 0);
   this.taxAmount = this.subtotal * (this.taxRate / 100);
   this.totalAmount = this.subtotal + this.taxAmount;
 });
+
 deliveryNoteSchema.index({ company: 1, deleted: 1 });
 deliveryNoteSchema.index({ project: 1, deleted: 1 });
 deliveryNoteSchema.index({ client: 1, deleted: 1 });
 deliveryNoteSchema.index({ sequentialNumber: 1 }, { unique: true });
+
 const DeliveryNote = mongoose.model('DeliveryNote', deliveryNoteSchema);
 export default DeliveryNote;
