@@ -138,6 +138,75 @@ describe('CLIENTS - Client Management', () => {
         .set('Authorization', `Bearer ${token}`)
         .expect(404);
     });
+
+    it('should permanently delete a client', async () => {
+      const newClient = await request(app)
+        .post('/api/client')
+        .set('Authorization', `Bearer ${token}`)
+        .send({ ...testClient, email: `permanent_${Date.now()}@test.com`, nif: '77543210B' })
+        .expect(201);
+
+      const tempClientId = newClient.body.data._id;
+
+      const delRes = await request(app)
+        .delete(`/api/client/${tempClientId}?permanent=true`)
+        .set('Authorization', `Bearer ${token}`)
+        .expect(200);
+
+      expect(delRes.body.message).toBe('CLIENTE ELIMINADO');
+    });
+  });
+
+  describe('GET /api/client/archived', () => {
+    it('should list archived clients', async () => {
+      const res = await request(app)
+        .get('/api/client/archived')
+        .set('Authorization', `Bearer ${token}`)
+        .expect(200);
+
+      expect(Array.isArray(res.body.data)).toBe(true);
+    });
+
+    it('should list archived clients with pagination', async () => {
+      const res = await request(app)
+        .get('/api/client/archived?page=1&limit=5')
+        .set('Authorization', `Bearer ${token}`)
+        .expect(200);
+
+      expect(res.body.pagination).toHaveProperty('currentPage');
+      expect(res.body.pagination).toHaveProperty('totalItems');
+    });
+  });
+
+  describe('PATCH /api/client/:id/restore', () => {
+    it('should restore a deleted client', async () => {
+      const res2 = await request(app)
+        .post('/api/client')
+        .set('Authorization', `Bearer ${token}`)
+        .send({ ...testClient, email: `restore_${Date.now()}@test.com`, nif: '99876543B' })
+        .expect(201);
+
+      const tempClientId = res2.body.data._id;
+
+      await request(app)
+        .delete(`/api/client/${tempClientId}`)
+        .set('Authorization', `Bearer ${token}`)
+        .expect(200);
+
+      const restoreRes = await request(app)
+        .patch(`/api/client/${tempClientId}/restore`)
+        .set('Authorization', `Bearer ${token}`)
+        .expect(200);
+
+      expect(restoreRes.body.message).toBe('CLIENTE RESTAURADO');
+    });
+
+    it('should return 404 for non-existent client restore', async () => {
+      await request(app)
+        .patch('/api/client/65f8b3a2c9d1e20012345678/restore')
+        .set('Authorization', `Bearer ${token}`)
+        .expect(404);
+    });
   });
 
   afterAll(async () => {

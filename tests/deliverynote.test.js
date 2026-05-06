@@ -162,6 +162,73 @@ describe('DELIVERY NOTES - Delivery Note Management', () => {
 
       expect(res.body.message).toBe('ALBARAN ELIMINADO');
     });
+
+    it('should return 404 for non-existent delivery note delete', async () => {
+      const fakeId = '507f1f77bcf86cd799439011';
+      await request(app)
+        .delete(`/api/deliverynote/${fakeId}`)
+        .set('Authorization', `Bearer ${token}`)
+        .expect(404);
+    });
+  });
+
+  describe('GET /api/deliverynote/:id/pdf', () => {
+    it('should return PDF for delivery note', async () => {
+      const newDN = await request(app)
+        .post('/api/deliverynote')
+        .set('Authorization', `Bearer ${token}`)
+        .send({ ...testDeliveryNote, project: projectId })
+        .expect(201);
+
+      const newId = newDN.body.data._id;
+
+      const res = await request(app)
+        .get(`/api/deliverynote/${newId}/pdf`)
+        .set('Authorization', `Bearer ${token}`)
+        .expect(200);
+
+      expect(res.headers['content-type']).toBe('application/pdf');
+    });
+
+    it('should return 404 for non-existent delivery note PDF', async () => {
+      const fakeId = '507f1f77bcf86cd799439011';
+      await request(app)
+        .get(`/api/deliverynote/${fakeId}/pdf`)
+        .set('Authorization', `Bearer ${token}`)
+        .expect(404);
+    });
+  });
+
+  describe('POST /api/deliverynote - validation', () => {
+    it('should reject with empty items', async () => {
+      const res = await request(app)
+        .post('/api/deliverynote')
+        .set('Authorization', `Bearer ${token}`)
+        .send({ ...testDeliveryNote, project: projectId, items: [] })
+        .expect(400);
+
+      expect(res.body.error).toBe(true);
+    });
+
+    it('should reject invalid project ID format', async () => {
+      const res = await request(app)
+        .post('/api/deliverynote')
+        .set('Authorization', `Bearer ${token}`)
+        .send({ ...testDeliveryNote, project: 'invalid-id' })
+        .expect(400);
+
+      expect(res.body.error).toBe(true);
+    });
+
+    it('should reject invalid workDate format', async () => {
+      const res = await request(app)
+        .post('/api/deliverynote')
+        .set('Authorization', `Bearer ${token}`)
+        .send({ ...testDeliveryNote, project: projectId, workDate: 'not-a-date' })
+        .expect(400);
+
+      expect(res.body.error).toBe(true);
+    });
   });
 
   afterAll(async () => {

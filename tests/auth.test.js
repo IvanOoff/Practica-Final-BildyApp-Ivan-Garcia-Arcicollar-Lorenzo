@@ -117,6 +117,68 @@ describe('AUTH - User Registration and Login', () => {
         .set('Authorization', 'Bearer token_invalido')
         .expect(401);
     });
+
+    it('should reject malformed authorization header', async () => {
+      await request(app)
+        .get('/api/user')
+        .set('Authorization', 'InvalidFormat')
+        .expect(401);
+    });
+
+    it('should reject expired token format', async () => {
+      await request(app)
+        .get('/api/user')
+        .set('Authorization', 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJfaWQiOiIifQ.test')
+        .expect(401);
+    });
+  });
+
+  describe('POST /api/user/login - edge cases', () => {
+    it('should reject empty email', async () => {
+      const res = await request(app)
+        .post('/api/user/login')
+        .send({
+          email: '',
+          password: 'TestPass123'
+        })
+        .expect(400);
+
+      expect(res.body.error).toBe(true);
+    });
+
+    it('should reject empty password', async () => {
+      const res = await request(app)
+        .post('/api/user/login')
+        .send({
+          email: testUser.email,
+          password: ''
+        })
+        .expect(400);
+
+      expect(res.body.error).toBe(true);
+    });
+
+    it('should reject missing password field', async () => {
+      const res = await request(app)
+        .post('/api/user/login')
+        .send({
+          email: testUser.email
+        })
+        .expect(400);
+
+      expect(res.body.error).toBe(true);
+    });
+
+    it('should reject missing email field', async () => {
+      const res = await request(app)
+        .post('/api/user/login')
+        .send({
+          password: 'TestPass123'
+        })
+        .expect(400);
+
+      expect(res.body.error).toBe(true);
+    });
   });
 
   describe('POST /api/user/refresh', () => {
@@ -130,9 +192,149 @@ describe('AUTH - User Registration and Login', () => {
 
       expect(res.body).toHaveProperty('accessToken');
     });
+
+    it('should reject invalid refresh token', async () => {
+      const res = await request(app)
+        .post('/api/user/refresh')
+        .send({
+          refreshToken: 'invalid_token'
+        })
+        .expect(401);
+
+      expect(res.body.error).toBe(true);
+    });
+
+    it('should reject missing refresh token', async () => {
+      const res = await request(app)
+        .post('/api/user/refresh')
+        .send({})
+        .expect(400);
+
+      expect(res.body.error).toBe(true);
+    });
   });
 
-  afterAll(async () => {
+  describe('POST /api/user/logout', () => {
+    it('should logout successfully', async () => {
+      const res = await request(app)
+        .post('/api/user/logout')
+        .set('Authorization', `Bearer ${token}`)
+        .send({ refreshToken })
+        .expect(200);
+
+      expect(res.body.message).toBe('Sesion cerrada correctamente');
+    });
+  });
+
+  describe('PUT /api/user/password', () => {
+    it('should change password', async () => {
+      const loginRes = await request(app)
+        .post('/api/user/login')
+        .send({
+          email: testUser.email,
+          password: testUser.password
+        });
+
+      const newToken = loginRes.body.accessToken;
+
+      const res = await request(app)
+        .put('/api/user/password')
+        .set('Authorization', `Bearer ${newToken}`)
+        .send({
+          currentPassword: testUser.password,
+          newPassword: 'NewPass123'
+        })
+        .expect(200);
+
+      expect(res.body.message).toBe('Contrasena cambiada correctamente');
+    });
+
+    it('should reject wrong current password', async () => {
+      const loginRes = await request(app)
+        .post('/api/user/login')
+        .send({
+          email: testUser.email,
+          password: 'NewPass123'
+        });
+
+      const newToken = loginRes.body.accessToken;
+
+      const res = await request(app)
+        .put('/api/user/password')
+        .set('Authorization', `Bearer ${newToken}`)
+        .send({
+          currentPassword: 'WrongPassword',
+          newPassword: 'AnotherPass123'
+        })
+        .expect(401);
+
+      expect(res.body.error).toBe(true);
+    });
+  });
+
+  describe('PUT /api/user/register (profile update)', () => {
+    it('should update profile', async () => {
+      const loginRes = await request(app)
+        .post('/api/user/login')
+        .send({
+          email: testUser.email,
+          password: 'NewPass123'
+        });
+
+      const newToken = loginRes.body.accessToken;
+
+      const res = await request(app)
+        .put('/api/user/register')
+        .set('Authorization', `Bearer ${newToken}`)
+        .send({
+          name: 'David Updated'
+        })
+        .expect(200);
+
+      expect(res.body.data).toHaveProperty('name', 'David Updated');
+    });
+
+    it('should reject empty update', async () => {
+      const loginRes = await request(app)
+        .post('/api/user/login')
+        .send({
+          email: testUser.email,
+          password: 'NewPass123'
+        });
+
+      const newToken = loginRes.body.accessToken;
+
+      const res = await request(app)
+        .put('/api/user/register')
+        .set('Authorization', `Bearer ${newToken}`)
+        .send({})
+        .expect(400);
+
+      expect(res.body.error).toBe(true);
+    });
+  });
+
+  describe('DELETE /api/user', () => {
+    it('should soft delete user', async () => {
+      const loginRes = await request(app)
+        .post('/api/user/login')
+        .send({
+          email: testUser.email,
+          password: 'NewPass123'
+        });
+
+      const newToken = loginRes.body.accessToken;
+
+      const res = await request(app)
+        .delete('/api/user')
+        .set('Authorization', `Bearer ${newToken}`)
+        .expect(200);
+
+      expect(res.body.message).toBe('Usuario eliminado');
+    });
+  });
+
+afterAll(async () => {
     if (token) {
       await request(app)
         .delete('/api/user')

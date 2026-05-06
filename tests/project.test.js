@@ -137,6 +137,150 @@ describe('PROJECTS - Project Management', () => {
 
       expect(res.body.message).toBe('PROYECTO ELIMINADO');
     });
+
+    it('should permanently delete a project', async () => {
+      const res2 = await request(app)
+        .post('/api/project')
+        .set('Authorization', `Bearer ${token}`)
+        .send({ ...testProject, client: clientId, projectCode: `PRJ2-${Date.now()}` })
+        .expect(201);
+
+      const tempProjectId = res2.body.data._id;
+
+      const delRes = await request(app)
+        .delete(`/api/project/${tempProjectId}?permanent=true`)
+        .set('Authorization', `Bearer ${token}`)
+        .expect(200);
+
+      expect(delRes.body.message).toBe('PROYECTO ELIMINADO');
+    });
+  });
+
+  describe('GET /api/project/archived', () => {
+    it('should get archived projects', async () => {
+      const res = await request(app)
+        .get('/api/project/archived')
+        .set('Authorization', `Bearer ${token}`)
+        .expect(200);
+
+      expect(Array.isArray(res.body.data)).toBe(true);
+    });
+  });
+
+  describe('PATCH /api/project/:id/restore', () => {
+    it('should restore a deleted project', async () => {
+      const res2 = await request(app)
+        .post('/api/project')
+        .set('Authorization', `Bearer ${token}`)
+        .send({ ...testProject, client: clientId, projectCode: `PRJ-RESTORE-${Date.now()}` })
+        .expect(201);
+
+      const tempProjectId = res2.body.data._id;
+
+      await request(app)
+        .delete(`/api/project/${tempProjectId}`)
+        .set('Authorization', `Bearer ${token}`)
+        .expect(200);
+
+      const restoreRes = await request(app)
+        .patch(`/api/project/${tempProjectId}/restore`)
+        .set('Authorization', `Bearer ${token}`)
+        .expect(200);
+
+      expect(restoreRes.body.data).toHaveProperty('deleted', false);
+    });
+
+    it('should return 404 for non-existent project restore', async () => {
+      const fakeId = '507f1f77bcf86cd799439011';
+      await request(app)
+        .patch(`/api/project/${fakeId}/restore`)
+        .set('Authorization', `Bearer ${token}`)
+        .expect(404);
+    });
+  });
+
+  describe('POST /api/project - validation', () => {
+    it('should reject project without name', async () => {
+      await request(app)
+        .post('/api/project')
+        .set('Authorization', `Bearer ${token}`)
+        .send({ client: clientId, projectCode: `PRJ-NONAME-${Date.now()}` })
+        .expect(400);
+    });
+
+    it('should reject project without projectCode', async () => {
+      await request(app)
+        .post('/api/project')
+        .set('Authorization', `Bearer ${token}`)
+        .send({ name: 'Test Project', client: clientId })
+        .expect(400);
+    });
+
+    it('should reject project with invalid client ID', async () => {
+      await request(app)
+        .post('/api/project')
+        .set('Authorization', `Bearer ${token}`)
+        .send({ name: 'Test Project', client: 'invalid-id', projectCode: `PRJ-INVALID-${Date.now()}` })
+        .expect(400);
+    });
+  });
+
+  describe('GET /api/project/:id - edge cases', () => {
+    it('should return 404 for non-existent project', async () => {
+      const fakeId = '507f1f77bcf86cd799439011';
+      await request(app)
+        .get(`/api/project/${fakeId}`)
+        .set('Authorization', `Bearer ${token}`)
+        .expect(404);
+    });
+  });
+
+  describe('POST /api/project - date validation', () => {
+    it('should reject invalid startDate format', async () => {
+      const res = await request(app)
+        .post('/api/project')
+        .set('Authorization', `Bearer ${token}`)
+        .send({
+          name: 'Test Project',
+          client: clientId,
+          projectCode: `PRJ-DATE1-${Date.now()}`,
+          startDate: 'invalid-date'
+        })
+        .expect(400);
+
+      expect(res.body.error).toBe(true);
+    });
+
+    it('should reject invalid endDate format', async () => {
+      const res = await request(app)
+        .post('/api/project')
+        .set('Authorization', `Bearer ${token}`)
+        .send({
+          name: 'Test Project',
+          client: clientId,
+          projectCode: `PRJ-DATE2-${Date.now()}`,
+          endDate: 'not-a-date'
+        })
+        .expect(400);
+
+      expect(res.body.error).toBe(true);
+    });
+
+    it('should reject both invalid dates', async () => {
+      const res = await request(app)
+        .post('/api/project')
+        .set('Authorization', `Bearer ${token}`)
+        .send({
+          name: 'Test Project',
+          client: clientId,
+          projectCode: `PRJ-DATE3-${Date.now()}`,
+          startDate: 'bad-date',
+          endDate: 'also-bad'
+        })
+        .expect(400);
+
+      expect(res.body.error).toBe(true);
+    });
   });
 
   afterAll(async () => {
