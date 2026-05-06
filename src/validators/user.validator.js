@@ -1,3 +1,5 @@
+// Definición de las reglas para los usuarios.
+
 import { z } from 'zod';
 
 const generateValidationCode = () => {

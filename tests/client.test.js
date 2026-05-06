@@ -6,10 +6,10 @@ import Company from '../src/models/Company.js';
 
 describe('CLIENTS - Client Management', () => {
   const testUser = {
-    name: 'Test User',
-    lastName: 'Test',
-    email: `client_test_${Date.now()}@test.com`,
-    password: 'TestPass123'
+    name: 'Marc Garcia',
+    lastName: 'Martinez',
+    email: `client_test_${Date.now()}@bildyapp.es`,
+    password: 'SecurePass99'
   };
 
   let token = '';
@@ -18,17 +18,17 @@ describe('CLIENTS - Client Management', () => {
   let companyId = '';
 
   const testClient = {
-    name: 'Cliente Test SL',
-    email: 'cliente@test.com',
-    phone: '612345678',
-    contactPerson: 'Juan Perez',
-    nif: '12345678A',
+    name: 'Constructora Barcelona SL',
+    email: 'info@constructora-bcn.es',
+    phone: '932123456',
+    contactPerson: 'Laura Fernandez',
+    nif: '87654321B',
     address: {
-      street: 'Calle Mayor',
-      number: '1',
-      postal: '28001',
-      city: 'Madrid',
-      province: 'Madrid'
+      street: 'Avda. Diagonal',
+      number: '452',
+      postal: '08013',
+      city: 'Barcelona',
+      province: 'Barcelona'
     }
   };
 
@@ -49,7 +49,7 @@ describe('CLIENTS - Client Management', () => {
     const company = await Company.create({
       owner: userId,
       name: `${testUser.name} ${testUser.lastName}`,
-      cif: '12345678A',
+      cif: '87654321B',
       isFreelance: true
     });
     companyId = company._id;
@@ -58,7 +58,7 @@ describe('CLIENTS - Client Management', () => {
   });
 
   describe('POST /api/client', () => {
-    it('deberia crear un cliente', async () => {
+    it('should create a client', async () => {
       const res = await request(app)
         .post('/api/client')
         .set('Authorization', `Bearer ${token}`)
@@ -70,7 +70,7 @@ describe('CLIENTS - Client Management', () => {
       clientId = res.body.data._id;
     });
 
-    it('deberia rechazar cliente sin autenticar', async () => {
+    it('should reject unauthenticated client creation', async () => {
       const res = await request(app)
         .post('/api/client')
         .send(testClient)
@@ -81,7 +81,7 @@ describe('CLIENTS - Client Management', () => {
   });
 
   describe('GET /api/client', () => {
-    it('deberia listar clientes', async () => {
+    it('should list clients', async () => {
       const res = await request(app)
         .get('/api/client')
         .set('Authorization', `Bearer ${token}`)
@@ -93,7 +93,7 @@ describe('CLIENTS - Client Management', () => {
   });
 
   describe('GET /api/client/:id', () => {
-    it('deberia obtener un cliente por ID', async () => {
+    it('should get a client by ID', async () => {
       const res = await request(app)
         .get(`/api/client/${clientId}`)
         .set('Authorization', `Bearer ${token}`)
@@ -102,7 +102,7 @@ describe('CLIENTS - Client Management', () => {
       expect(res.body.data).toHaveProperty('_id', clientId);
     });
 
-    it('deberia devolver 404 para cliente inexistente', async () => {
+    it('should return 404 for non-existent client', async () => {
       await request(app)
         .get('/api/client/65f8b3a2c9d1e20012345678')
         .set('Authorization', `Bearer ${token}`)
@@ -111,19 +111,19 @@ describe('CLIENTS - Client Management', () => {
   });
 
   describe('PUT /api/client/:id', () => {
-    it('deberia actualizar un cliente', async () => {
+    it('should update a client', async () => {
       const res = await request(app)
         .put(`/api/client/${clientId}`)
         .set('Authorization', `Bearer ${token}`)
-        .send({ name: 'Cliente Actualizado' })
+        .send({ name: 'Constructora Actualizada SA' })
         .expect(200);
 
-      expect(res.body.data).toHaveProperty('name', 'Cliente Actualizado');
+      expect(res.body.data).toHaveProperty('name', 'Constructora Actualizada SA');
     });
   });
 
   describe('DELETE /api/client/:id', () => {
-    it('deberia eliminar un cliente (soft delete)', async () => {
+    it('should delete a client (soft delete)', async () => {
       const res = await request(app)
         .delete(`/api/client/${clientId}`)
         .set('Authorization', `Bearer ${token}`)
@@ -132,7 +132,7 @@ describe('CLIENTS - Client Management', () => {
       expect(res.body.message).toBe('CLIENTE ELIMINADO');
     });
 
-    it('deberia devolver 404 para cliente ya eliminado', async () => {
+    it('should return 404 for already deleted client', async () => {
       await request(app)
         .get(`/api/client/${clientId}`)
         .set('Authorization', `Bearer ${token}`)

@@ -1,3 +1,4 @@
+// Para la comunicación entre el servidor y el navegador.
 import { Server } from 'socket.io';
 import { socketAuthMiddleware } from '../middleware/socket-auth.middleware.js';
 import { registerDeliveryNoteHandlers } from '../handlers/socket.handler.js';

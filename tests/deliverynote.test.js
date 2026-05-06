@@ -6,10 +6,10 @@ import Company from '../src/models/Company.js';
 
 describe('DELIVERY NOTES - Delivery Note Management', () => {
   const testUser = {
-    name: 'Test User',
-    lastName: 'Test',
-    email: `delivery_test_${Date.now()}@test.com`,
-    password: 'TestPass123'
+    name: 'Ana Lopez',
+    lastName: 'Gil',
+    email: `delivery_test_${Date.now()}@bildyapp.es`,
+    password: 'SecurePass99'
   };
 
   let token = '';
@@ -20,24 +20,25 @@ describe('DELIVERY NOTES - Delivery Note Management', () => {
   let companyId = '';
 
   const testClient = {
-    name: 'Cliente Albaran',
-    email: 'albaran@test.com'
+    name: 'Servicios Informaticos Sevilla',
+    email: 'admin@servicessevilla.es'
   };
 
   const testProject = {
-    name: 'Proyecto Albaran',
-    description: 'Descripcion proyecto albaran'
+    name: 'Desarrollo App Mobile',
+    projectCode: `PRJ-DELIVERY-${Date.now()}`,
+    description: 'Desarrollo de aplicacion movil para Gestion'
   };
 
   const testDeliveryNote = {
     client: '',
-    type: 'hours',
+    format: 'hours',
     items: [
       {
-        description: 'Horas de desarrollo',
-        quantity: 10,
+        description: 'Desarrollo backend API REST',
+        quantity: 40,
         unit: 'hours',
-        price: 50
+        price: 55
       }
     ],
     taxRate: 21
@@ -60,7 +61,7 @@ describe('DELIVERY NOTES - Delivery Note Management', () => {
     const company = await Company.create({
       owner: userId,
       name: `${testUser.name} ${testUser.lastName}`,
-      cif: '12345678A',
+      cif: '87654321B',
       isFreelance: true
     });
     companyId = company._id;
@@ -83,7 +84,7 @@ describe('DELIVERY NOTES - Delivery Note Management', () => {
   });
 
   describe('POST /api/deliverynote', () => {
-    it('deberia crear un albaran', async () => {
+    it('should create a delivery note', async () => {
       const res = await request(app)
         .post('/api/deliverynote')
         .set('Authorization', `Bearer ${token}`)
@@ -96,7 +97,7 @@ describe('DELIVERY NOTES - Delivery Note Management', () => {
       deliveryNoteId = res.body.data._id;
     });
 
-    it('deberia calcular totales automaticamente', async () => {
+    it('should calculate totals automatically', async () => {
       const res = await request(app)
         .post('/api/deliverynote')
         .set('Authorization', `Bearer ${token}`)
@@ -109,7 +110,7 @@ describe('DELIVERY NOTES - Delivery Note Management', () => {
   });
 
   describe('GET /api/deliverynote', () => {
-    it('deberia listar albaranes', async () => {
+    it('should list delivery notes', async () => {
       const res = await request(app)
         .get('/api/deliverynote')
         .set('Authorization', `Bearer ${token}`)
@@ -118,7 +119,7 @@ describe('DELIVERY NOTES - Delivery Note Management', () => {
       expect(Array.isArray(res.body.data)).toBe(true);
     });
 
-    it('deberia filtrar por proyecto', async () => {
+    it('should filter by project', async () => {
       const res = await request(app)
         .get(`/api/deliverynote?project=${projectId}`)
         .set('Authorization', `Bearer ${token}`)
@@ -129,7 +130,7 @@ describe('DELIVERY NOTES - Delivery Note Management', () => {
   });
 
   describe('PATCH /api/deliverynote/:id/send', () => {
-    it('deberia enviar un albaran', async () => {
+    it('should send a delivery note', async () => {
       const res = await request(app)
         .patch(`/api/deliverynote/${deliveryNoteId}/send`)
         .set('Authorization', `Bearer ${token}`)
@@ -140,20 +141,20 @@ describe('DELIVERY NOTES - Delivery Note Management', () => {
   });
 
   describe('PATCH /api/deliverynote/:id/sign', () => {
-    it('deberia firmar un albaran', async () => {
+    it('should sign a delivery note', async () => {
       const res = await request(app)
         .patch(`/api/deliverynote/${deliveryNoteId}/sign`)
         .set('Authorization', `Bearer ${token}`)
-        .send({ signedBy: 'Juan Firmante' })
+        .send({ signedBy: 'Carlos Rodriguez' })
         .expect(200);
 
       expect(res.body.data).toHaveProperty('status', 'signed');
-      expect(res.body.data).toHaveProperty('signedBy', 'Juan Firmante');
+      expect(res.body.data).toHaveProperty('signedBy', 'Carlos Rodriguez');
     });
   });
 
   describe('DELETE /api/deliverynote/:id', () => {
-    it('deberia eliminar un albaran (soft delete)', async () => {
+    it('should delete a delivery note (soft delete)', async () => {
       const res = await request(app)
         .delete(`/api/deliverynote/${deliveryNoteId}`)
         .set('Authorization', `Bearer ${token}`)

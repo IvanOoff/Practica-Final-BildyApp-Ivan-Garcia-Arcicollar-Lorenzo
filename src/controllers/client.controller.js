@@ -14,6 +14,7 @@ export const createClientCtrl = async (req, res, next) => {
     }
 
     const client = await Client.create({
+      user: req.user._id,
       company: req.user.company,
       name,
       email,
@@ -31,7 +32,7 @@ export const createClientCtrl = async (req, res, next) => {
 
 export const getClientsCtrl = async (req, res, next) => {
   try {
-    const { page = 1, limit = 10, name, sort = '-createdAt' } = req.query;
+    const { page = 1, limit = 10, name,sort = '-createdAt' } = req.query;
 
     const filter = { company: req.user.company, deleted: false };
     if (name) {

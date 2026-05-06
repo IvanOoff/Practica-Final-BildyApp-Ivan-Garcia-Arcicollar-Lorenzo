@@ -209,5 +209,4 @@ router.delete('/:id', authMiddleware, deleteProjectCtrl);
  *       404: { description: Proyecto no encontrado }
  */
 router.patch('/:id/restore', authMiddleware, restoreProjectCtrl);
-
 export default router;

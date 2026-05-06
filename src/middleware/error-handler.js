@@ -1,3 +1,4 @@
+// Para capturar los errores que ocurran en la app.
 import mongoose from 'mongoose';
 import { AppError } from '../utils/AppError.js';
 import { logErrorToSlack } from '../services/logger.service.js';

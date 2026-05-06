@@ -1,4 +1,4 @@
-// UTILIDADES JWT - GESTION DE TOKENS
+// UTILIDADES JWT - GESTION DE TOKENS.
 
 import jwt from 'jsonwebtoken';
 import crypto from 'node:crypto';

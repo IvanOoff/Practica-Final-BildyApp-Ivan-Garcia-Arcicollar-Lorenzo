@@ -1,7 +1,8 @@
+// Para surbir los archivos a Cludinaryy
+
 import { v2 as cloudinary } from 'cloudinary';
 import sharp from 'sharp';
 import { config } from '../config/index.js';
-
 cloudinary.config({
   cloud_name: config.cloudinaryCloudName,
   api_key: config.cloudinaryApiKey,
@@ -29,7 +30,7 @@ export const uploadImage = async (fileBuffer, folder = 'bildyapp') => {
   });
 };
 
-export const uploadPdf = async (fileBuffer, folder = 'bildyapp/pdfs') => {
+export const uploadPdf = async (fileBuffer, folder= 'bildyapp/pdfs') => {
   return new Promise((resolve, reject) => {
     cloudinary.uploader.upload_stream(
       {

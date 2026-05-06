@@ -1,3 +1,4 @@
+// Para verificar JWT -> QUE EL USUARIO ESTÉ LOGUEADO ANTES DE ACCEDER A UNA RUTA.
 import User from '../models/User.js';
 import { verifyToken } from '../utils/handleJwt.js';
 import { AppError } from '../utils/AppError.js';
@@ -9,7 +10,6 @@ const authMiddleware = async (req, res, next) => {
     }
 
     const token = req.headers.authorization.split(' ').pop();
-
     const dataToken = await verifyToken(token);
 
     if (!dataToken || !dataToken._id) {
@@ -19,16 +19,15 @@ const authMiddleware = async (req, res, next) => {
     const user = await User.findById(dataToken._id);
 
     if (!user) {
-      throw AppError.unauthorized('Usuario no encontrado', 'USER_NOT_FOUND');
+      throw AppError.unauthorized('USUARIO NO ENCONTRADO', 'USER_NOT_FOUND');
     }
 
     if (user.deleted) {
-      throw AppError.unauthorized('Usuario eliminado', 'USER_DELETED');
+      throw AppError.unauthorized('USUARIO ELIMINADO', 'USER_DELETED');
     }
-
     req.user = user;
 
-    next();
+    next(); // tODO correcto.
   } catch (err) {
     next(err);
   }

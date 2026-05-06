@@ -60,23 +60,20 @@ const deliveryNoteSchema = new mongoose.Schema(
       type: String,
       required: [true, 'EL NUMERO SECUENCIAL ES REQUERIDO']
     },
-    type: {
+    format: {
       type: String,
       enum: {
-        values: ['hours', 'materials', 'mixed'],
-        message: '{VALUE} NO ES UN TIPO VALIDO'
+        values: ['hours', 'material'],
+        message: '{VALUE} NO ES UN FORMATO VALIDO'
       },
       default: 'hours'
     },
-    status: {
+    description: {
       type: String,
-      enum: {
-        values: ['draft', 'sent', 'signed', 'cancelled'],
-        message: '{VALUE} NO ES UN ESTADO VALIDO'
-      },
-      default: 'draft'
+      trim: true,
+      maxlength: [1000, 'MAXIMO 1000 CARACTERES']
     },
-    date: {
+    workDate: {
       type: Date,
       default: Date.now
     },
@@ -98,6 +95,18 @@ const deliveryNoteSchema = new mongoose.Schema(
     totalAmount: {
       type: Number,
       default: 0
+    },
+    status: {
+      type: String,
+      enum: {
+        values: ['draft', 'sent', 'signed', 'cancelled'],
+        message: '{VALUE} NO ES UN ESTADO VALIDO'
+      },
+      default: 'draft'
+    },
+    signed: {
+      type: Boolean,
+      default: false
     },
     signedBy: {
       type: String,

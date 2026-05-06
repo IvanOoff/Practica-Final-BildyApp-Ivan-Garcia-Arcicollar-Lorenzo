@@ -1,3 +1,4 @@
+// Para manejar lols eventos del socket.
 export const emitToRoom = (io, room, event, data) => {
   io.to(room).emit(event, data);
 };

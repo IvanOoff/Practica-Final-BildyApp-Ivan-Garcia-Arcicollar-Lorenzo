@@ -20,9 +20,12 @@ export const createDeliveryNoteSchema = z.object({
       .regex(/^[0-9a-fA-F]{24}$/, 'ID DE PROYECTO NO VALIDO'),
     client: z.string()
       .regex(/^[0-9a-fA-F]{24}$/, 'ID DE CLIENTE NO VALIDO'),
-    type: z.enum(['hours', 'materials', 'mixed'])
+    format: z.enum(['hours', 'material'])
       .optional(),
-    date: z.string()
+    description: z.string()
+      .max(1000, 'MAXIMO 1000 CARACTERES')
+      .optional(),
+    workDate: z.string()
       .transform(val => new Date(val))
       .refine(val => !isNaN(val.getTime()), 'FECHA NO VALIDA')
       .optional(),
@@ -40,9 +43,14 @@ export const createDeliveryNoteSchema = z.object({
 
 export const updateDeliveryNoteSchema = z.object({
   body: z.object({
-    type: z.enum(['hours', 'materials', 'mixed'])
+    format: z.enum(['hours', 'material'])
       .optional(),
-    status: z.enum(['draft', 'sent', 'signed', 'cancelled'])
+    description: z.string()
+      .max(1000, 'MAXIMO 1000 CARACTERES')
+      .optional(),
+    workDate: z.string()
+      .transform(val => new Date(val))
+      .refine(val => !isNaN(val.getTime()), 'FECHA NO VALIDA')
       .optional(),
     items: z.array(itemSchema)
       .min(1, 'DEBE TENER AL MENOS UN ITEM')

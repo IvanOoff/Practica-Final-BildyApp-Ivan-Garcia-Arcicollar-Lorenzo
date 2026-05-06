@@ -1,3 +1,4 @@
+// Para prevenir noSQL injection.
 import mongoSanitize from 'express-mongo-sanitize';
 
 export const sanitize = (req, res, next) => {

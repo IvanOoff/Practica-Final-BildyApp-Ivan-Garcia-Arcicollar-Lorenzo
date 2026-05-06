@@ -9,7 +9,6 @@ import userEvents from '../services/notification.service.js';
 
 const generateValidationCode = () => {
   return Math.floor(100000 + Math.random() * 900000).toString();
-
 };
 
 // REGISTRO DEL USUARIO ->
@@ -18,7 +17,7 @@ export const registerCtrl = async (req, res, next) => {
     const { email, password, name, lastName } = req.body;
     const existingUser = await User.findOne({ email, status: 'verified' });
     if (existingUser) {
-      throw AppError.conflict('El email ya esta registrado');
+      throw AppError.conflict('El email ya esta registrado!!!!');
     }
     const hashedPassword = await encrypt(password);
     const verificationCode = generateValidationCode();
@@ -68,12 +67,12 @@ export const validateCtrl = async (req, res, next) => {
       throw AppError.badRequest('El usuario ya esta verificado');
     }
     if (user.verificationAttempts <= 0) {
-      throw AppError.tooManyRequests('Codigo de verificacion expirado. Solicita uno nuevo.');
+      throw AppError.tooManyRequests('Codigo de verificacion expirado,solicita uno nuevo.');
     }
     if (!user.verificationCode || user.verificationCode !== code) {
       user.verificationAttempts -= 1;
       await user.save();
-      throw AppError.badRequest(`Codigo incorrecto. Intentos restantes: ${user.verificationAttempts}`);
+      throw AppError.badRequest(`Codigo INCORERECTO | Intentos restantes: ${user.verificationAttempts}`);
     }
     if (user.verificationCodeExpires < new Date()) {
       throw AppError.badRequest('El codigo de validacion ha expirado');
@@ -218,7 +217,7 @@ export const deleteCtrl = async (req, res, next) => {
         { deleted: true, deletedAt: new Date() }
       );
       userEvents.emit('user.deleted', req.user);
-      return res.json({ message: 'Usuario eliminado (soft delete)' });
+      return res.json({ message: 'Usuario eliminado' });
     }
     await User.findByIdAndDelete(req.user._id);
     await RefreshToken.deleteMany({ user: req.user._id });
@@ -241,7 +240,6 @@ export const createCompanyCtrl = async (req, res, next) => {
     const existingOwner = await Company.findOne({ owner: userId });
     if (existingOwner) {
       throw AppError.conflict('Ya eres propietario de una empresa');
-
     }
     if (isFreelance) {
       const companyData = {
@@ -257,7 +255,7 @@ export const createCompanyCtrl = async (req, res, next) => {
       return res.status(201).json({ data: company });
     }
     if (!cif) {
-      throw AppError.badRequest('El CIF es requerido para empresas no freelance');
+      throw AppError.badRequest('El CIF es requerido para empresas NO freelance');
     }
     const existingCompany = await Company.findOne({ cif });
     if (existingCompany) {

@@ -6,10 +6,10 @@ import Company from '../src/models/Company.js';
 
 describe('PROJECTS - Project Management', () => {
   const testUser = {
-    name: 'Test User',
-    lastName: 'Test',
-    email: `project_test_${Date.now()}@test.com`,
-    password: 'TestPass123'
+    name: 'Pablo Ruiz',
+    lastName: 'Sanchez',
+    email: `project_test_${Date.now()}@bildyapp.es`,
+    password: 'SecurePass99'
   };
 
   let token = '';
@@ -19,13 +19,14 @@ describe('PROJECTS - Project Management', () => {
   let companyId = '';
 
   const testClient = {
-    name: 'Cliente Proyecto',
-    email: 'proyecto@test.com'
+    name: 'Inmobiliaria Valencia',
+    email: 'contacto@inmovalencia.es'
   };
 
   const testProject = {
-    name: 'Proyecto Test',
-    description: 'Descripcion del proyecto test'
+    name: 'Reforma Integral Oficina',
+    projectCode: `PRJ-${Date.now()}`,
+    description: 'Proyecto de reforma completa en local comercial'
   };
 
   beforeAll(async () => {
@@ -45,7 +46,7 @@ describe('PROJECTS - Project Management', () => {
     const company = await Company.create({
       owner: userId,
       name: `${testUser.name} ${testUser.lastName}`,
-      cif: '12345678A',
+      cif: '87654321B',
       isFreelance: true
     });
     companyId = company._id;
@@ -60,7 +61,7 @@ describe('PROJECTS - Project Management', () => {
   });
 
   describe('POST /api/project', () => {
-    it('deberia crear un proyecto', async () => {
+    it('should create a project', async () => {
       const res = await request(app)
         .post('/api/project')
         .set('Authorization', `Bearer ${token}`)
@@ -72,11 +73,11 @@ describe('PROJECTS - Project Management', () => {
       projectId = res.body.data._id;
     });
 
-    it('deberia rechazar proyecto sin cliente', async () => {
+    it('should reject project without client', async () => {
       const res = await request(app)
         .post('/api/project')
         .set('Authorization', `Bearer ${token}`)
-        .send({ name: 'Sin Cliente' })
+        .send({ name: 'Proyecto Sin Cliente' })
         .expect(400);
 
       expect(res.body.error).toBe(true);
@@ -84,7 +85,7 @@ describe('PROJECTS - Project Management', () => {
   });
 
   describe('GET /api/project', () => {
-    it('deberia listar proyectos', async () => {
+    it('should list projects', async () => {
       const res = await request(app)
         .get('/api/project')
         .set('Authorization', `Bearer ${token}`)
@@ -93,7 +94,7 @@ describe('PROJECTS - Project Management', () => {
       expect(Array.isArray(res.body.data)).toBe(true);
     });
 
-    it('deberia filtrar por cliente', async () => {
+    it('should filter by client', async () => {
       const res = await request(app)
         .get(`/api/project?client=${clientId}`)
         .set('Authorization', `Bearer ${token}`)
@@ -104,19 +105,19 @@ describe('PROJECTS - Project Management', () => {
   });
 
   describe('PUT /api/project/:id', () => {
-    it('deberia actualizar un proyecto', async () => {
+    it('should update a project', async () => {
       const res = await request(app)
         .put(`/api/project/${projectId}`)
         .set('Authorization', `Bearer ${token}`)
-        .send({ name: 'Proyecto Actualizado' })
+        .send({ name: 'Reforma Oficina Actualizada' })
         .expect(200);
 
-      expect(res.body.data).toHaveProperty('name', 'Proyecto Actualizado');
+      expect(res.body.data).toHaveProperty('name', 'Reforma Oficina Actualizada');
     });
   });
 
   describe('PATCH /api/project/:id/status', () => {
-    it('deberia cambiar estado del proyecto', async () => {
+    it('should change project status', async () => {
       const res = await request(app)
         .patch(`/api/project/${projectId}/status`)
         .set('Authorization', `Bearer ${token}`)
@@ -128,7 +129,7 @@ describe('PROJECTS - Project Management', () => {
   });
 
   describe('DELETE /api/project/:id', () => {
-    it('deberia eliminar un proyecto (soft delete)', async () => {
+    it('should delete a project (soft delete)', async () => {
       const res = await request(app)
         .delete(`/api/project/${projectId}`)
         .set('Authorization', `Bearer ${token}`)

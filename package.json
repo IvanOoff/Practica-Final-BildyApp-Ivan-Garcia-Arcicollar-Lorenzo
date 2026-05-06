@@ -37,6 +37,7 @@
     "zod": "^4.3.6"
   },
   "devDependencies": {
+    "cross-env": "^7.0.3",
     "jest": "^30.3.0",
     "jest-coverage-badges": "^1.1.2",
     "mongodb-memory-server": "^11.1.0",

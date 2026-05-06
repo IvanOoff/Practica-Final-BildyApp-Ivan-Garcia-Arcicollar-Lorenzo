@@ -25,10 +25,10 @@ describe('USER VALIDATORS', () => {
     it('should validate valid registration data', () => {
       const data = {
         body: {
-          email: 'test@test.com',
+          email: 'test@bildyapp.es',
           password: 'TestPass123',
-          name: 'John',
-          lastName: 'Doe'
+          name: 'Javier',
+          lastName: 'Lopez'
         }
       };
       const result = validatorRegister.safeParse(data);
@@ -49,7 +49,7 @@ describe('USER VALIDATORS', () => {
     it('should reject short password', () => {
       const data = {
         body: {
-          email: 'test@test.com',
+          email: 'test@bildyapp.es',
           password: 'short'
         }
       };
@@ -60,7 +60,7 @@ describe('USER VALIDATORS', () => {
     it('should allow optional name and lastName', () => {
       const data = {
         body: {
-          email: 'test@test.com',
+          email: 'test@bildyapp.es',
           password: 'TestPass123'
         }
       };
@@ -73,7 +73,7 @@ describe('USER VALIDATORS', () => {
     it('should validate valid login data', () => {
       const data = {
         body: {
-          email: 'test@test.com',
+          email: 'test@bildyapp.es',
           password: 'TestPass123'
         }
       };
@@ -84,7 +84,7 @@ describe('USER VALIDATORS', () => {
     it('should reject missing password', () => {
       const data = {
         body: {
-          email: 'test@test.com'
+          email: 'test@bildyapp.es'
         }
       };
       const result = validatorLogin.safeParse(data);
@@ -114,7 +114,7 @@ describe('USER VALIDATORS', () => {
 
   describe('validatorUpdateProfile', () => {
     it('should validate with valid name', () => {
-      const data = { body: { name: 'Jane' } };
+      const data = { body: { name: 'Maria' } };
       const result = validatorUpdateProfile.safeParse(data);
       expect(result.success).toBe(true);
     });
@@ -126,7 +126,7 @@ describe('USER VALIDATORS', () => {
     });
 
     it('should validate with valid NIF', () => {
-      const data = { body: { nif: '12345678A' } };
+      const data = { body: { nif: '87654321B' } };
       const result = validatorUpdateProfile.safeParse(data);
       expect(result.success).toBe(true);
     });
@@ -172,8 +172,8 @@ describe('USER VALIDATORS', () => {
       const data = {
         body: {
           isFreelance: false,
-          name: 'Test Company',
-          cif: '12345678A'
+          name: 'Construcciones Garcia SL',
+          cif: '87654321B'
         }
       };
       const result = validatorCreateCompany.safeParse(data);
@@ -194,7 +194,7 @@ describe('USER VALIDATORS', () => {
       const data = {
         body: {
           isFreelance: false,
-          name: 'Test Company',
+          name: 'Construcciones Garcia SL',
           cif: 'invalid'
         }
       };
@@ -210,7 +210,8 @@ describe('PROJECT VALIDATORS', () => {
       const data = {
         body: {
           client: '507f1f77bcf86cd799439011',
-          name: 'Test Project'
+          name: 'Reforma Oficina',
+          projectCode: 'PRJ-TEST-001'
         }
       };
       const result = createProjectSchema.safeParse(data);
@@ -220,7 +221,7 @@ describe('PROJECT VALIDATORS', () => {
     it('should reject missing client', () => {
       const data = {
         body: {
-          name: 'Test Project'
+          name: 'Reforma Oficina'
         }
       };
       const result = createProjectSchema.safeParse(data);
@@ -231,7 +232,7 @@ describe('PROJECT VALIDATORS', () => {
       const data = {
         body: {
           client: 'invalid-id',
-          name: 'Test Project'
+          name: 'Reforma Oficina'
         }
       };
       const result = createProjectSchema.safeParse(data);
@@ -242,8 +243,9 @@ describe('PROJECT VALIDATORS', () => {
       const data = {
         body: {
           client: '507f1f77bcf86cd799439011',
-          name: 'Test Project',
-          description: 'A description',
+          name: 'Reforma Oficina',
+          projectCode: 'PRJ-TEST-002',
+          description: 'Descripcion del proyecto',
           status: 'in_progress',
           startDate: '2024-01-01'
         }
@@ -290,7 +292,7 @@ describe('DELIVERY NOTE VALIDATORS', () => {
           project: '507f1f77bcf86cd799439011',
           client: '507f1f77bcf86cd799439012',
           items: [{
-            description: 'Test item',
+            description: 'Trabajo realizado',
             quantity: 10,
             unit: 'hours',
             price: 50
@@ -329,7 +331,7 @@ describe('DELIVERY NOTE VALIDATORS', () => {
     it('should validate partial update', () => {
       const data = {
         body: {
-          notes: 'Updated notes'
+          notes: 'Notas actualizadas del albaran'
         }
       };
       const result = updateDeliveryNoteSchema.safeParse(data);
@@ -345,7 +347,7 @@ describe('DELIVERY NOTE VALIDATORS', () => {
 
   describe('signDeliveryNoteSchema', () => {
     it('should validate with signedBy', () => {
-      const data = { body: { signedBy: 'John Doe' } };
+      const data = { body: { signedBy: 'Pedro Martinez' } };
       const result = signDeliveryNoteSchema.safeParse(data);
       expect(result.success).toBe(true);
     });
@@ -353,7 +355,7 @@ describe('DELIVERY NOTE VALIDATORS', () => {
     it('should validate with signature', () => {
       const data = {
         body: {
-          signedBy: 'John Doe',
+          signedBy: 'Pedro Martinez',
           signature: 'data:image/png;base64,abc123'
         }
       };

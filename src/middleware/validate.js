@@ -18,7 +18,7 @@ export const validate = (schema) => (req, res, next) => {
 
       return res.status(400).json({
         error: true,
-        message: 'Error de validacion',
+        message: 'Error de validación',
         code: 'VALIDATION_ERROR',
         details: errors
       });
@@ -34,7 +34,7 @@ export const validateObjectId = (paramName = 'id') => (req, res, next) => {
   if (!mongoose.Types.ObjectId.isValid(id)) {
     return res.status(400).json({
       error: true,
-      message: `'${paramName}' no es un ID valido`,
+      message: `'${paramName}' no es un ID válido..`,
       code: 'INVALID_ID'
     });
   }

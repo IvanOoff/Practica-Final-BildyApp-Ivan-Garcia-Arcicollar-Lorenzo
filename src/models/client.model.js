@@ -1,11 +1,15 @@
-
-// definicion de los clientes -> nombre, email,numero de telefono y más. 
 import mongoose from 'mongoose';
+
 const clientSchema = new mongoose.Schema(
   {
-    company: {
+    user: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'User',
+      required: [true, 'EL USUARIO ES REQUERIDO']
+    },
+    company: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Company',
       required: [true, 'LA EMPRESA ES REQUERIDA']
     },
     name: {
@@ -62,6 +66,9 @@ const clientSchema = new mongoose.Schema(
     versionKey: false
   }
 );
+
 clientSchema.index({ company: 1, deleted: 1 });
+clientSchema.index({ user: 1 });
+
 const Client = mongoose.model('Client', clientSchema);
 export default Client;

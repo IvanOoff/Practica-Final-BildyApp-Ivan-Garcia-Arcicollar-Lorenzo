@@ -1,3 +1,4 @@
+// ESTRUCTURA DE DATOS DEL USUARUIO EN MONGODB.
 import mongoose from 'mongoose';
 
 const userSchema = new mongoose.Schema(
@@ -34,7 +35,7 @@ const userSchema = new mongoose.Schema(
       unique: true,
       sparse: true,
       trim: true,
-      match: [/^[0-9]{8}[A-Z]$/, 'NIF no válido']
+      match: [/^[0-9]{8}[A-Z]$/, 'NIF inválido']
     },
     role: {
       type: String,
@@ -112,5 +113,4 @@ userSchema.methods.toJSON = function () {
 };
 
 const User = mongoose.model('User', userSchema);
-
 export default User;

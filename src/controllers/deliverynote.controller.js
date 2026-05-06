@@ -12,7 +12,7 @@ const generateSequentialNumber = async (companyId) => {
 
   const lastNote = await DeliveryNote.find({
     company: companyId,
-    sequentialNumber: { $regex: `^${prefix}` }
+    sequentialNumber: { $regex: `^${prefix}` } // Buscamos por prefijo.
   }).sort({ sequentialNumber: -1 }).limit(1);
 
   let nextNumber = 1;
@@ -27,7 +27,7 @@ const generateSequentialNumber = async (companyId) => {
 
 export const createDeliveryNoteCtrl = async (req, res, next) => {
   try {
-    const { project, client, type, items, date, notes, taxRate } = req.body;
+    const { project, client, format, description, workDate, items, notes, taxRate } = req.body;
 
     const projectExists = await Project.findOne({
       _id: project,
@@ -55,9 +55,10 @@ export const createDeliveryNoteCtrl = async (req, res, next) => {
       project,
       client,
       sequentialNumber,
-      type: type || 'hours',
+      format: format || 'hours',
+      description,
+      workDate: workDate ? new Date(workDate) : new Date(),
       items,
-      date: date ? new Date(date) : new Date(),
       notes,
       taxRate: taxRate || 21
     });
@@ -65,7 +66,7 @@ export const createDeliveryNoteCtrl = async (req, res, next) => {
     try {
       const io = getIO();
       io.to(`company:${req.user.company}`).emit('deliverynote:new', { deliveryNote });
-    } catch (e) { /* Socket.IO not initialized in tests */ }
+    } catch (e) {}
 
     res.status(201).json({ data: deliveryNote });
   } catch (err) {
@@ -75,18 +76,18 @@ export const createDeliveryNoteCtrl = async (req, res, next) => {
 
 export const getDeliveryNotesCtrl = async (req, res, next) => {
   try {
-    const { project, client, type, status, from, to, page = 1, limit = 10, sort = '-date' } = req.query;
+    const { project, client, format, status, from, to, page = 1, limit = 10, sort = '-workDate' } = req.query;
 
     const filter = { company: req.user.company, deleted: false };
     if (project) filter.project = project;
     if (client) filter.client = client;
-    if (type) filter.type = type;
+    if (format) filter.format = format;
     if (status) filter.status = status;
 
     if (from || to) {
-      filter.date = {};
-      if (from) filter.date.$gte = new Date(from);
-      if (to) filter.date.$lte = new Date(to);
+      filter.workDate = {};
+      if (from) filter.workDate.$gte = new Date(from);
+      if (to) filter.workDate.$lte = new Date(to);
     }
 
     const skip = (parseInt(page) - 1) * parseInt(limit);
@@ -152,7 +153,7 @@ export const updateDeliveryNoteCtrl = async (req, res, next) => {
       throw AppError.badRequest('NO SE PUEDE MODIFICAR UN ALBARAN FIRMADO');
     }
 
-    const allowedFields = ['type', 'items', 'date', 'notes', 'taxRate'];
+    const allowedFields = ['format', 'description', 'items', 'workDate', 'notes', 'taxRate'];
     allowedFields.forEach(field => {
       if (req.body[field] !== undefined) {
         deliveryNote[field] = req.body[field];
@@ -193,6 +194,7 @@ export const signDeliveryNoteCtrl = async (req, res, next) => {
     }
 
     deliveryNote.status = 'signed';
+    deliveryNote.signed = true;
     deliveryNote.signedBy = signedBy;
     deliveryNote.signedAt = new Date();
     deliveryNote.signatureUrl = signatureUrl;
@@ -201,7 +203,8 @@ export const signDeliveryNoteCtrl = async (req, res, next) => {
     try {
       const io = getIO();
       io.to(`company:${req.user.company}`).emit('deliverynote:signed', { deliveryNote });
-    } catch (e) { /* Socket.IO not initialized in tests */ }
+    } catch (e) {
+    }
 
     res.json({ data: deliveryNote, message: 'ALBARAN FIRMADO' });
   } catch (err) {
@@ -227,7 +230,8 @@ export const sendDeliveryNoteCtrl = async (req, res, next) => {
     try {
       const io = getIO();
       io.to(`company:${req.user.company}`).emit('deliverynote:sent', { deliveryNote });
-    } catch (e) { /* Socket.IO not initialized in tests */ }
+    } catch (e) {
+    }
 
     res.json({ data: deliveryNote, message: 'ALBARAN ENVIADO' });
   } catch (err) {

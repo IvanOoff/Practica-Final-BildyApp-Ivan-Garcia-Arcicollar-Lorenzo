@@ -1,3 +1,4 @@
+// Definición de las reglas para los clientes.
 import { z } from 'zod';
 export const createClientSchema = z.object({
   body: z.object({

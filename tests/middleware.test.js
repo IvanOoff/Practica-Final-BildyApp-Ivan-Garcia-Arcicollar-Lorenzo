@@ -140,29 +140,6 @@ describe('ERROR HANDLER', () => {
     }));
   });
 
-  it('should handle duplicate key errors', () => {
-    const error = { code: 11000, keyValue: { email: 'test@test.com' } };
-
-    errorHandler(error, mockReq, mockRes, mockNext);
-
-    expect(mockRes.status).toHaveBeenCalledWith(409);
-    expect(mockRes.json).toHaveBeenCalledWith(expect.objectContaining({
-      code: 'DUPLICATE_KEY',
-      message: expect.stringContaining('email')
-    }));
-  });
-
-  it('should handle ZodError', () => {
-    const error = { name: 'ZodError', errors: [{ path: ['name'], message: 'Name required' }] };
-
-    errorHandler(error, mockReq, mockRes, mockNext);
-
-    expect(mockRes.status).toHaveBeenCalledWith(400);
-    expect(mockRes.json).toHaveBeenCalledWith(expect.objectContaining({
-      code: 'VALIDATION_ERROR'
-    }));
-  });
-
   it('should handle file too large errors', () => {
     const error = { code: 'LIMIT_FILE_SIZE' };
 

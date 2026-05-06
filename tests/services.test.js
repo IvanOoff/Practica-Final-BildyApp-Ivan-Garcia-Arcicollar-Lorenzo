@@ -1,4 +1,4 @@
-import { jest } from '@jest/globals';
+import { jest }from '@jest/globals';
 import { generateDeliveryNotePdf } from '../src/services/pdf.service.js';
 import { emitToRoom, registerDeliveryNoteHandlers } from '../src/handlers/socket.handler.js';
 
@@ -20,22 +20,22 @@ describe('MAIL SERVICE', () => {
 describe('PDF SERVICE', () => {
   it('should generate a PDF buffer for hours format', async () => {
     const deliveryNote = {
-      sequentialNumber: 'ALB-2024-0001',
+      sequentialNumber: 'ALB-2024-0042',
       workDate: new Date(),
       signed: false,
       client: {
-        name: 'Test Client',
-        cif: '12345678A',
-        email: 'test@client.com'
+        name: 'Construcciones Barcelona SL',
+        cif: 'B87654321',
+        email: 'info@construcciones-bcn.es'
       },
       project: {
-        name: 'Test Project',
-        projectCode: 'PRJ-001'
+        name: 'Reforma Hotel Central',
+        projectCode: 'PRJ-2024-003'
       },
       format: 'hours',
-      description: 'Test description',
-      hours: 10,
-      workers: [{ name: 'Worker 1', hours: 5 }]
+      description: 'Trabajos de fontaneria',
+      hours: 25,
+      workers: [{ name: 'Antonio Garcia', hours: 15 }]
     };
 
     const pdfBuffer = await generateDeliveryNotePdf(deliveryNote);
@@ -46,16 +46,16 @@ describe('PDF SERVICE', () => {
 
   it('should generate a PDF buffer for material format', async () => {
     const deliveryNote = {
-      sequentialNumber: 'ALB-2024-0002',
+      sequentialNumber: 'ALB-2024-0043',
       workDate: new Date(),
       signed: true,
       signedAt: new Date(),
-      signatureUrl: 'https://example.com/signature.png',
-      client: { name: 'Client', cif: 'B12345678', email: 'c@client.com' },
-      project: { name: 'Project', projectCode: 'P001' },
+      signatureUrl: 'https://example.com/firma.png',
+      client: { name: 'Inmobiliaria Valencia', cif: 'B12345678', email: 'contacto@inmovalencia.es' },
+      project: { name: 'Construccion Parking', projectCode: 'PRJ-2024-008' },
       format: 'material',
       material: 'Cemento',
-      quantity: 100,
+      quantity: 500,
       unit: 'kg'
     };
 
@@ -67,7 +67,7 @@ describe('PDF SERVICE', () => {
 
   it('should generate PDF with minimal data', async () => {
     const deliveryNote = {
-      sequentialNumber: 'ALB-2024-0003',
+      sequentialNumber: 'ALB-2024-0044',
       workDate: new Date(),
       signed: false,
       client: {},

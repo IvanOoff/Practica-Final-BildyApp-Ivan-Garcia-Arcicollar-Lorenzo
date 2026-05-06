@@ -1,3 +1,5 @@
+//  PAra generar PDFs  de albaranes para descarga.
+
 import PDFDocument from 'pdfkit';
 
 export const generateDeliveryNotePdf = async (deliveryNote) => {
@@ -13,7 +15,7 @@ export const generateDeliveryNotePdf = async (deliveryNote) => {
       doc.fontSize(20).text('ALBARAN', { align: 'center' });
       doc.moveDown();
       doc.fontSize(12).text(`Numero: ${deliveryNote.sequentialNumber || 'N/A'}`);
-      doc.text(`Fecha: ${new Date(deliveryNote.date).toLocaleDateString()}`);
+      doc.text(`Fecha: ${new Date(deliveryNote.workDate).toLocaleDateString()}`);
       doc.text(`Estado: ${deliveryNote.status === 'signed' ? 'FIRMADO' : 'PENDIENTE'}`);
       doc.moveDown();
 
@@ -32,11 +34,12 @@ export const generateDeliveryNotePdf = async (deliveryNote) => {
         const addr = deliveryNote.project.address;
         doc.text(`Direccion: ${addr.street || ''}, ${addr.number || ''}, ${addr.city || ''}, ${addr.province || ''}`);
       }
+      
       doc.moveDown();
 
       doc.fontSize(14).text('DETALLE DEL TRABAJO', { underline: true });
       doc.fontSize(11);
-      doc.text(`Tipo: ${deliveryNote.type === 'hours' ? 'HORAS' : deliveryNote.type === 'materials' ? 'MATERIALES' : 'MIXTO'}`);
+      doc.text(`Tipo: ${deliveryNote.format === 'hours' ? 'HORAS' : 'MATERIALES'}`);
       doc.text(`Descripcion: ${deliveryNote.description || 'Sin descripcion'}`);
 
       if (deliveryNote.items && deliveryNote.items.length > 0) {
@@ -73,5 +76,4 @@ export const generateDeliveryNotePdf = async (deliveryNote) => {
     }
   });
 };
-
 export default { generateDeliveryNotePdf };

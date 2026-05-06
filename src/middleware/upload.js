@@ -1,3 +1,5 @@
+// middleware para subir los archivos, o imagenes etc.
+
 import multer from 'multer';
 import { extname, join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -7,7 +9,7 @@ const __dirname = dirname(__filename);
 
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
-    const uploadPath = join(__dirname, '../../uploads');
+    const uploadPath = join(__dirname, '../../uploads'); // donde se guarda.
     cb(null, uploadPath);
   },
   filename: (req, file, cb) => {
@@ -36,7 +38,7 @@ const uploadMiddleware = multer({
   storage,
   fileFilter,
   limits: {
-    fileSize: 5* 1024 * 1024,
+    fileSize: 5* 1024 * 1024, // MAX.
     files: 1
   }
 });

@@ -1,8 +1,10 @@
+// Logger con slack -> envía un mensaje a un canal de Slack con los detalles,
+
 import { config } from '../config/index.js';
 
 export const logErrorToSlack = async (error, req = null) => {
   if (!config.slackWebhookUrl) {
-    console.warn('SLACK_WEBHOOK_URL no configurado, omitiendo envío a Slack');
+    console.warn('El SLACK_WEBHOOK_URL no está configurado..');
     return;
   }
 
@@ -42,8 +44,7 @@ export const logErrorToSlack = async (error, req = null) => {
       body: JSON.stringify(payload)
     });
   } catch (err) {
-    console.error('Error enviando a Slack:', err.message);
+    console.error('Error enviando a -> Slack:', err.message);
   }
 };
-
 export default { logErrorToSlack };

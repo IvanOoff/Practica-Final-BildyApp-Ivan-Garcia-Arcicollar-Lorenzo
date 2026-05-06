@@ -5,9 +5,9 @@ import User from '../src/models/User.js';
 
 describe('AUTH - User Registration and Login', () => {
   const testUser = {
-    name: 'Test User',
-    lastName: 'Test',
-    email: `test_${Date.now()}@test.com`,
+    name: 'David Sanchez',
+    lastName: 'Lopez',
+    email: `test_${Date.now()}@bildyapp.es`,
     password: 'TestPass123'
   };
 
@@ -15,7 +15,7 @@ describe('AUTH - User Registration and Login', () => {
   let refreshToken = '';
 
   describe('POST /api/user/register', () => {
-    it('deberia registrar un nuevo usuario', async () => {
+    it('should register a new user', async () => {
       const res = await request(app)
         .post('/api/user/register')
         .send(testUser)
@@ -36,7 +36,7 @@ describe('AUTH - User Registration and Login', () => {
       );
     });
 
-    it('deberia rechazar email duplicado', async () => {
+    it('should reject duplicate email', async () => {
       const res = await request(app)
         .post('/api/user/register')
         .send(testUser)
@@ -45,7 +45,7 @@ describe('AUTH - User Registration and Login', () => {
       expect(res.body.error).toBe(true);
     });
 
-    it('deberia rechazar datos invalidos', async () => {
+    it('should reject invalid data', async () => {
       const res = await request(app)
         .post('/api/user/register')
         .send({ email: 'invalid' })
@@ -56,7 +56,7 @@ describe('AUTH - User Registration and Login', () => {
   });
 
   describe('POST /api/user/login', () => {
-    it('deberia hacer login correctamente', async () => {
+    it('should login correctly', async () => {
       const res = await request(app)
         .post('/api/user/login')
         .send({
@@ -70,7 +70,7 @@ describe('AUTH - User Registration and Login', () => {
       refreshToken = res.body.refreshToken;
     });
 
-    it('deberia rechazar password incorrecto', async () => {
+    it('should reject wrong password', async () => {
       const res = await request(app)
         .post('/api/user/login')
         .send({
@@ -82,11 +82,11 @@ describe('AUTH - User Registration and Login', () => {
       expect(res.body.error).toBe(true);
     });
 
-    it('deberia rechazar usuario inexistente', async () => {
+    it('should reject non-existent user', async () => {
       const res = await request(app)
         .post('/api/user/login')
         .send({
-          email: 'noexiste@test.com',
+          email: 'noexiste@bildyapp.es',
           password: 'TestPass123'
         })
         .expect(401);
@@ -96,7 +96,7 @@ describe('AUTH - User Registration and Login', () => {
   });
 
   describe('GET /api/user', () => {
-    it('deberia obtener usuario autenticado', async () => {
+    it('should get authenticated user', async () => {
       const res = await request(app)
         .get('/api/user')
         .set('Authorization', `Bearer ${token}`)
@@ -105,13 +105,13 @@ describe('AUTH - User Registration and Login', () => {
       expect(res.body.data).toHaveProperty('email', testUser.email);
     });
 
-    it('deberia rechazar sin token', async () => {
+    it('should reject without token', async () => {
       await request(app)
         .get('/api/user')
         .expect(401);
     });
 
-    it('deberia rechazar token invalido', async () => {
+    it('should reject invalid token', async () => {
       await request(app)
         .get('/api/user')
         .set('Authorization', 'Bearer token_invalido')
@@ -120,7 +120,7 @@ describe('AUTH - User Registration and Login', () => {
   });
 
   describe('POST /api/user/refresh', () => {
-    it('deberia renovar access token', async () => {
+    it('should renew access token', async () => {
       const res = await request(app)
         .post('/api/user/refresh')
         .send({

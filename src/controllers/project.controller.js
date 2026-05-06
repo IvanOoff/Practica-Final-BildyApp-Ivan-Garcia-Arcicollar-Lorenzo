@@ -4,7 +4,7 @@ import { AppError } from '../utils/AppError.js';
 
 export const createProjectCtrl = async (req, res, next) => {
   try {
-    const { client, name, description, startDate } = req.body;
+    const { client, name, projectCode, description, address, email, notes, startDate } = req.body;
 
     const clientExists = await Client.findOne({
       _id: client,
@@ -16,10 +16,15 @@ export const createProjectCtrl = async (req, res, next) => {
     }
 
     const project = await Project.create({
+      user: req.user._id,
       company: req.user.company,
       client,
       name,
+      projectCode,
       description,
+      address,
+      email,
+      notes,
       startDate: startDate ? new Date(startDate) : Date.now()
     });
 

@@ -1,4 +1,4 @@
-// UTILIDADES DE PASSWORD - BCRYPT
+// UTILIDADES DE PASSWORD - BCRYPT.
 
 import bcryptjs from 'bcryptjs';
 

@@ -1,6 +1,6 @@
-// INDEX -> Configuración centralizada.
+// Configuración centralizada ->
 import dotenv from 'dotenv';
-import mongoose from 'mongoose';
+import { dbConnect, mongoose } from './database.js';
 
 dotenv.config();
 const config = {
@@ -21,29 +21,6 @@ const config = {
   smtpPass: process.env.SMTP_PASS,
   emailFrom: process.env.EMAIL_FROM || 'noreply@bildyapp.com'
 };
-
-const dbConnect = async () => {
-  if (!config.dbUri) {
-    console.error('ERROR');
-    process.exit(1);
-  }
-
-  try {
-    await mongoose.connect(config.dbUri);
-    console.log('CONECTADO A MONGODB');
-  } catch (error) {
-    console.error('ERROR conectando a MongoDB:', error.message);
-    process.exit(1);
-  }
-};
-
-mongoose.connection.on('disconnected', () => {
-  console.warn('Desconectado de MongoDB....');
-});
-
-mongoose.connection.on('error', (err) => {
-  console.error('Error en MongoDB:', err.message);
-});
 
 export { config, dbConnect, mongoose };
 export default config;

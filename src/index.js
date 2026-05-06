@@ -44,7 +44,6 @@ const gracefulShutdown = async (signal) => {
     process.exit(0);
   }
 };
-
 process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
 process.on('SIGINT', () => gracefulShutdown('SIGINT'));
 

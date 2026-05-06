@@ -1,7 +1,12 @@
-//
 import mongoose from 'mongoose';
+
 const projectSchema = new mongoose.Schema(
   {
+    user: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User',
+      required: [true, 'EL USUARIO ES REQUERIDO']
+    },
     company: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'Company',
@@ -19,10 +24,34 @@ const projectSchema = new mongoose.Schema(
       minlength: [2, 'MINIMO 2 CARACTERES'],
       maxlength: [200, 'MAXIMO 200 CARACTERES']
     },
-    description: {
+    projectCode: {
+      type: String,
+      required: [true, 'EL CODIGO DE PROYECTO ES REQUERIDO'],
+      unique: true,
+      trim: true,
+      uppercase: true
+    },
+    address: {
+      street: { type: String, trim: true, maxlength: 200 },
+      number: { type: String, trim: true, maxlength: 20 },
+      postal: { type: String, trim: true, maxlength: 10 },
+      city: { type: String, trim: true, maxlength: 100 },
+      province: { type: String, trim: true, maxlength: 100 }
+    },
+    email: {
+      type: String,
+      trim: true,
+      lowercase: true,
+      match: [/^\S+@\S+\.\S+$/, 'EMAIL NO VALIDO']
+    },
+    notes: {
       type: String,
       trim: true,
       maxlength: [1000, 'MAXIMO 1000 CARACTERES']
+    },
+    active: {
+      type: Boolean,
+      default: true
     },
     status: {
       type: String,
@@ -40,11 +69,6 @@ const projectSchema = new mongoose.Schema(
       type: Date,
       default: null
     },
-    totalHours: {
-      type: Number,
-      default: 0,
-      min: [0, 'NO PUEDE SER NEGATIVO']
-    },
     deleted: {
       type: Boolean,
       default: false,
@@ -60,8 +84,10 @@ const projectSchema = new mongoose.Schema(
     versionKey: false
   }
 );
+
 projectSchema.index({ company: 1, deleted: 1 });
 projectSchema.index({ client: 1, deleted: 1 });
 projectSchema.index({ status: 1 });
+
 const Project = mongoose.model('Project', projectSchema);
 export default Project;
