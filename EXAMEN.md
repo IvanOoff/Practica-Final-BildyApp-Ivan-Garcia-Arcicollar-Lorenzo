@@ -1,9 +1,10 @@
-# EXAMEN / WEB 2
+# EXAMEN / WEB
 ## Ivan Garcia-Arcicollar Lorenzo
 
 ---
 
-## RETO -> 
+## RETO
+
 Implementar operaciones idempotentes y atómicas en el ciclo de vida del albarán para garantizar la integridad de los datos en escenarios de concurrencia y concurrencia de red.
 
 ---
@@ -38,72 +39,8 @@ if (deliveryNote.status === 'signed') {
 
 ```javascript
 // Test 1: soft delete de albarán firmado → 400
-it('should reject soft delete of signed delivery note', async () => {
-  const newDN = await request(app)
-    .post('/api/deliverynote')
-    .set('Authorization', `Bearer ${token}`)
-    .send({ ...testDeliveryNote, project: projectId })
-    .expect(201);
-
-  const dnId = newDN.body.data._id;
-
-  await request(app)
-    .patch(`/api/deliverynote/${dnId}/sign`)
-    .set('Authorization', `Bearer ${token}`)
-    .send({ signedBy: 'Test Signer' })
-    .expect(200);
-
-  const res = await request(app)
-    .delete(`/api/deliverynote/${dnId}`)
-    .set('Authorization', `Bearer ${token}`)
-    .expect(400);
-
-  expect(res.body.error).toBe(true);
-  expect(res.body.message).toContain('FIRMADO');
-});
-
 // Test 2: hard delete de albarán firmado → 400
-it('should reject hard delete of signed delivery note', async () => {
-  const newDN = await request(app)
-    .post('/api/deliverynote')
-    .set('Authorization', `Bearer ${token}`)
-    .send({ ...testDeliveryNote, project: projectId })
-    .expect(201);
-
-  const dnId = newDN.body.data._id;
-
-  await request(app)
-    .patch(`/api/deliverynote/${dnId}/sign`)
-    .set('Authorization', `Bearer ${token}`)
-    .send({ signedBy: 'Test Signer' })
-    .expect(200);
-
-  const res = await request(app)
-    .delete(`/api/deliverynote/${dnId}?permanent=true`)
-    .set('Authorization', `Bearer ${token}`)
-    .expect(400);
-
-  expect(res.body.error).toBe(true);
-  expect(res.body.message).toContain('FIRMADO');
-});
-
 // Test 3: sequential numbers únicos con Promise.all (concurrencia)
-it('should generate unique sequential numbers', async () => {
-  const [dn1, dn2] = await Promise.all([
-    request(app)
-      .post('/api/deliverynote')
-      .set('Authorization', `Bearer ${token}`)
-      .send({ ...testDeliveryNote, project: projectId })
-      .expect(201),
-    request(app)
-      .post('/api/deliverynote')
-      .set('Authorization', `Bearer ${token}`)
-      .send({ ...testDeliveryNote, project: projectId })
-      .expect(201)
-  ]);
-
-  expect(dn1.body.data.sequentialNumber).not.toBe(dn2.body.data.sequentialNumber);
-});
 ```
 
 **Archivos y líneas modificadas:**
@@ -121,103 +58,33 @@ it('should generate unique sequential numbers', async () => {
 
 ### 1. `controller:9-27` — Dos POST simultáneos: ¿qué devuelve `find().sort().limit(1)`? ¿Qué error lanza Mongoose con índice único?
 
-**Código original vulnerable (líneas 13-16):**
-```javascript
-const lastNote = await DeliveryNote.find({
-  company: companyId,
-  sequentialNumber: { $regex: `^${prefix}` }
-}).sort({ sequentialNumber: -1 }).limit(1);
-```
+Ambas solicitudes ejecutan el find al mismo tiempo, así que las dos obtienen el mismo resultado: el último albarán creado. Las dos calculan que el siguiente número sería el 4, y las dos intentan insertar `ALB-2026-0004`.
 
-**¿Qué devuelve `find().sort().limit(1)`?**
-
-Ambas solicitudes leen el mismo documento: el último creado (ej: `ALB-2026-0003`). Ambas calculan `nextNumber = 4`. Ambas intentan insertar `ALB-2026-0004`.
-
-**¿Qué error lanza Mongoose con índice único?**
-
-`MongoServerError: E11000 duplicate key error collection: bildyapp.deliverynotes index: sequentialNumber_1 dup key: { sequentialNumber: "ALB-2026-0004" }`.
-
-El índice único en `deliveryNoteSchema.index({ sequentialNumber: 1 }, { unique: true })` causa que MongoDB rechace el segundo insert.
+El índice único en `sequentialNumber` hace que MongoDB rechace la segunda inserción con un error E11000 duplicate key error. Si no se gestiona bien en el error handler, esto podría llegar como un 500 al cliente.
 
 ---
 
 ### 2. `controller:242-260` — `update` rechaza modificar firmado, `delete` no. ¿Consecuencias de borrar firmado con URL en Cloudinary?
 
-**Código vulnerable (antes - delete no verificaba):**
-```javascript
-// deliverynote.controller.js línea 254-259 (ANTES)
-deliveryNote.deleted = true;
-deliveryNote.deletedAt = new Date();
-await deliveryNote.save();
-```
-
-**Código corregido (línea 249-252 - AHORA verifica):**
-```javascript
-/// F13: Verificacion status signed antes de borrado (soft y hard)
-if (deliveryNote.status === 'signed') {
-  throw AppError.badRequest('NO SE PUEDE ELIMINAR UN ALBARAN FIRMADO');
-}
-```
-
-**Consecuencias de borrar firmado con URL en Cloudinary:**
-
-- **Huella legal desaparecida:** El albarán firmado tiene valor legal. Si se elimina, no hay forma de demostrar que el servicio fue prestado y aceptado.
-
-- **Orphan assets en Cloudinary:** Las imágenes de firmas y PDFs siguen existiendo en Cloudinary aunque el registro en BD desaparezca.
-
-- **Violación del principio de no repudio:** El cliente puede negar haber recibido o aceptado el servicio.
-
-- **Inconsistencia de datos:** Un auditor no encontrará el albarán en BD pero los archivos en Cloudinary siguen ahí.
+Si un albarán firmado se elimina, se pierde la huella legal del documento. En Cloudinary quedan las imágenes de las firmas y los PDFs huérfanos, ocupando espacio sin que nadie pueda acceder a ellos desde la app. El cliente podría negar haber aceptado el servicio, rompiendo el principio de no repudio.
 
 ---
 
 ### 3. `models/deliveryNote.model.js:115` — Índice unique 11000 → si no se gestiona, llega como 500. Traza desde Mongoose hasta `error-handler.js:46`.
 
-1. `DeliveryNote.create()` intenta insertar con `sequentialNumber` duplicado
-2. MongoDB detecta violación de índice único y devuelve código `11000`
-3. Mongoose convierte el error a `MongoServerError`
-4. Controller pasa el error a `next(err)`
-5. Express captura y pasa al middleware `errorHandler`
-6. `errorHandler.js:46` detecta `error.code === 11000` y responde con **409 Conflict** (no 500)
+Cuando MongoDB detecta una violación de índice único, devuelve el código 11000. Mongoose lo convierte a MongoServerError. El controller lo pasa al middleware de errores con `next(err)`. Express lo captura y lo envía a errorHandler, que detecta el código 11000 y responde con 409 Conflict.
 
 ---
 
 ### 4. Hipotético: numeración secuencial multi-réplica. ¿Por qué `findOneAndUpdate` + `$inc` es más robusto?
 
-**Código que evita el problema (línea 13-17):**
-```javascript
-const counter = await Counter.findOneAndUpdate(
-  { company: companyId, year },
-  { $inc: { seq: 1 } },
-  { new: true, upsert: true }
-);
-```
-
-- **Atomicidad en el servidor:** `findOneAndUpdate` con `$inc` se ejecuta atómicamente en MongoDB. No hay ventana entre búsqueda y actualización.
-
-- **Sin transacciones distribuidas:** El `$inc` se ejecuta en el servidor, no en el cliente. Las múltiples réplicas serializan correctamente.
-
-- **Upsert automático:** Si el counter no existe para company+year, lo crea sin race condition.
-
-- **Orden determinista:** Aunque las réplicas envíen comandos concurrently, el resultado es una secuencia consecutina sin duplicados.
+Porque la operación se ejecuta de forma atómica en el servidor de MongoDB. No hay ventana de tiempo entre buscar y actualizar, así que aunque varias réplicas envíen comandos simultáneamente, MongoDB los serializa correctamente. El upsert crea el contador si no existe sin race conditions.
 
 ---
 
 ### 5. Contraste: `PATCH /:id/sign` rechaza segunda firma con 400, no 200. ¿Cuál sería correcto según RFC 9110?
 
-**Código que implementa esto (línea 185-187 del controller):**
-```javascript
-if (deliveryNote.status === 'signed') {
-  throw AppError.badRequest('YA ESTA FIRMADO');
-}
-```
-
-**400 es correcto según RFC 9110.**
-
-- 200 OK: La solicitud se ejecutó con éxito y el estado cambió
-- 400 Bad Request: La solicitud no puede procesarse por razones semánticas
-
-Firmar un documento ya firmado no es un éxito (el estado no cambia), es un error semántico. Devolver 200 implicaría "sí procesé tu solicitud" cuando no hice nada.
+400 es la respuesta correcta según RFC 9110. Un documento ya firmado no puede recibir otra firma, así que no es un éxito. Devolver 200 implicaría decir "sí procesé tu solicitud" cuando en realidad no hice nada. 400 comunica claramente que la operación no se pudo completar por estado inválido.
 
 ---
 
@@ -226,43 +93,26 @@ Firmar un documento ya firmado no es un éxito (el estado no cambia), es un erro
 ### Fase 1: Análisis del problema
 
 1. Identificar que `generateSequentialNumber` usaba regex + sort (no atómico)
-   - Problema: Entre `find()` y `create()`, otra solicitud podía insertar
-   - Consecuencia: Posible E11000 duplicate key error
-
 2. Identificar que `deleteDeliveryNoteCtrl` no verificaba `status === 'signed'`
-   - Problema: Inconsistencia con `updateDeliveryNoteCtrl` que sí verificaba
-   - Consecuencia: Albarán firmado podía eliminarse, rompiendo trazabilidad legal
 
 ### Fase 2: Diseño de la solución
 
-1. **Counter model:**
-   - Nuevo modelo independiente para almacenar secuencias
-   - Índice único compuesto (company + year) para evitar duplicados
-   - Campo `seq` tipo Number para incremento atómico
-
-2. **generateSequentialNumber atómico:**
-   - `findOneAndUpdate` con `$inc: { seq: 1 }`
-   - `upsert: true` para crear si no existe
-   - `new: true` para retornar el documento actualizado
-
-3. **Verificación en delete:**
-   - Check `status === 'signed'` antes de soft delete
-   - Check `status === 'signed'` antes de hard delete
-   - Mensaje claro: "NO SE PUEDE ELIMINAR UN ALBARAN FIRMADO"
+1. Crear Counter model con índice único compuesto
+2. Implementar `findOneAndUpdate` con `$inc`
+3. Añadir verificación de signed antes de delete
 
 ### Fase 3: Implementación
 
-1. Crear `src/models/Counter.js` con esquema e índices
+1. Crear `src/models/Counter.js`
 2. Importar Counter en `deliverynote.controller.js`
 3. Reemplazar lógica de `generateSequentialNumber`
 4. Añadir verificación en `deleteDeliveryNoteCtrl`
-5. Añadir comentarios `/// F13` para trazabilidad
 
 ### Fase 4: Testing
 
-1. Test: soft delete de albarán firmado → 400
-2. Test: hard delete de albarán firmado → 400
-3. Test: sequential numbers únicos con `Promise.all` (simula concurrencia)
+1. Test soft delete de albarán firmado → 400
+2. Test hard delete de albarán firmado → 400
+3. Test sequential numbers únicos con `Promise.all`
 
 ---
 
@@ -273,7 +123,7 @@ Firmar un documento ya firmado no es un éxito (el estado no cambia), es un erro
 | `src/models/Counter.js` | Nuevo - modelo para contador atómico | `e627752` |
 | `src/controllers/deliverynote.controller.js` | Modificado - contador atómico + verificación signed | `f0075c5` |
 | `tests/deliverynote.test.js` | Nuevos tests F13 | `3376340` |
-| `EXAMEN.md` | Documentación completa | `4b1bfd9` |
+| `EXAMEN.md` | Documentación completa | `3d8bfd8` |
 
 ---
 
@@ -285,4 +135,4 @@ Firmar un documento ya firmado no es un éxito (el estado no cambia), es un erro
 | `delete` rechaza con 400 si `status === 'signed'` | ✅ Implementado línea 249-251 |
 | Test borrar firmado → 400 | ✅ Tests en deliverynote.test.js |
 | Test concurrencia con `Promise.all` no genera duplicados | ✅ Test de sequential numbers únicos |
-| `EXAMEN.md` con respuestas + Proceso | ✅ Documentación completa |
+| `EXAMEN.md` con respuestas + Proceso | ✅ Documentación completa
