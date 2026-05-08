@@ -128,7 +128,7 @@ const lastNote = await DeliveryNote.find({
 
 **¿Qué devuelve `find().sort().limit(1)`?**
 
-Ambas solicitudes leen el mismo documento: el último creado (ej: `ALB-2026-0003`). Ambas calculan `nextNumber = 4`. Ambas intentan insertar `ALB-2026-0004`.
+Las dos solicitudes leen el mismo documento, el último creado (ej: `ALB-2026-0003`). Ambas calculan `nextNumber = 4`. Ambas intentan insertar `ALB-2026-0004`.
 
 **¿Qué error lanza Mongoose con índice único?**
 
