@@ -37,9 +37,52 @@ if (deliveryNote.status === 'signed') {
 **3. Tests para ambos casos**
 
 ```javascript
-// Test 1: soft delete de albarán firmado → 400
-// Test 2: hard delete de albarán firmado → 400
-// Test 3: sequential numbers únicos con Promise.all (concurrencia)
+it('should reject soft delete of signed delivery note', async () => {
+  const newDN = await request(app)
+    .post('/api/deliverynote')
+    .set('Authorization', `Bearer ${token}`)
+    .send({ ...testDeliveryNote, project: projectId })
+    .expect(201);
+
+  await request(app)
+    .patch(`/api/deliverynote/${newDN.body.data._id}/sign`)
+    .set('Authorization', `Bearer ${token}`)
+    .send({ signedBy: 'Test Signer' })
+    .expect(200);
+
+  await request(app)
+    .delete(`/api/deliverynote/${newDN.body.data._id}`)
+    .set('Authorization', `Bearer ${token}`)
+    .expect(400);
+});
+
+it('should reject hard delete of signed delivery note', async () => {
+  const newDN = await request(app)
+    .post('/api/deliverynote')
+    .set('Authorization', `Bearer ${token}`)
+    .send({ ...testDeliveryNote, project: projectId })
+    .expect(201);
+
+  await request(app)
+    .patch(`/api/deliverynote/${newDN.body.data._id}/sign`)
+    .set('Authorization', `Bearer ${token}`)
+    .send({ signedBy: 'Test Signer' })
+    .expect(200);
+
+  await request(app)
+    .delete(`/api/deliverynote/${newDN.body.data._id}?permanent=true`)
+    .set('Authorization', `Bearer ${token}`)
+    .expect(400);
+});
+
+it('should generate unique sequential numbers with Promise.all', async () => {
+  const [dn1, dn2] = await Promise.all([
+    request(app).post('/api/deliverynote').set('Authorization', `Bearer ${token}`).send({ ...testDeliveryNote, project: projectId }),
+    request(app).post('/api/deliverynote').set('Authorization', `Bearer ${token}`).send({ ...testDeliveryNote, project: projectId })
+  ]);
+
+  expect(dn1.body.data.sequentialNumber).not.toBe(dn2.body.data.sequentialNumber);
+});
 ```
 
 **Archivos y líneas modificadas:**
