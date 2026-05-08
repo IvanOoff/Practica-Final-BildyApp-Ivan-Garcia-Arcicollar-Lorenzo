@@ -3,8 +3,7 @@
 
 ---
 
-## RETO
-
+## RETO ->
 Implementar operaciones idempotentes y atómicas en el ciclo de vida del albarán para garantizar la integridad de los datos en escenarios de concurrencia y concurrencia de red.
 
 ---
@@ -93,26 +92,43 @@ Porque la operación se ejecuta de forma atómica en el servidor de MongoDB. No 
 ### Fase 1: Análisis del problema
 
 1. Identificar que `generateSequentialNumber` usaba regex + sort (no atómico)
+   - Problema: Entre `find()` y `create()`, otra solicitud podía insertar
+   - Consecuencia: Posible E11000 duplicate key error
+
 2. Identificar que `deleteDeliveryNoteCtrl` no verificaba `status === 'signed'`
+   - Problema: Inconsistencia con `updateDeliveryNoteCtrl` que sí verificaba
+   - Consecuencia: Albarán firmado podía eliminarse, rompiendo trazabilidad legal
 
 ### Fase 2: Diseño de la solución
 
-1. Crear Counter model con índice único compuesto
-2. Implementar `findOneAndUpdate` con `$inc`
-3. Añadir verificación de signed antes de delete
+1. **Counter model:**
+   - Nuevo modelo independiente para almacenar secuencias
+   - Índice único compuesto (company + year) para evitar duplicados
+   - Campo `seq` tipo Number para incremento atómico
+
+2. **generateSequentialNumber atómico:**
+   - `findOneAndUpdate` con `$inc: { seq: 1 }`
+   - `upsert: true` para crear si no existe
+   - `new: true` para retornar el documento actualizado
+
+3. **Verificación en delete:**
+   - Check `status === 'signed'` antes de soft delete
+   - Check `status === 'signed'` antes de hard delete
+   - Mensaje claro: "NO SE PUEDE ELIMINAR UN ALBARAN FIRMADO"
 
 ### Fase 3: Implementación
 
-1. Crear `src/models/Counter.js`
+1. Crear `src/models/Counter.js` con esquema e índices
 2. Importar Counter en `deliverynote.controller.js`
 3. Reemplazar lógica de `generateSequentialNumber`
 4. Añadir verificación en `deleteDeliveryNoteCtrl`
+5. Añadir comentarios `/// F13` para trazabilidad
 
 ### Fase 4: Testing
 
-1. Test soft delete de albarán firmado → 400
-2. Test hard delete de albarán firmado → 400
-3. Test sequential numbers únicos con `Promise.all`
+1. Test: soft delete de albarán firmado → 400
+2. Test: hard delete de albarán firmado → 400
+3. Test: sequential numbers únicos con `Promise.all` (simula concurrencia)
 
 ---
 
