@@ -174,24 +174,3 @@ Porque la operación se ejecuta de forma atómica en el servidor de MongoDB. No 
 3. Test: sequential numbers únicos con `Promise.all` (simula concurrencia)
 
 ---
-
-## Archivos modificados
-
-| Archivo | Cambio | Commit |
-|---------|--------|--------|
-| `src/models/Counter.js` | Nuevo - modelo para contador atómico | `e627752` |
-| `src/controllers/deliverynote.controller.js` | Modificado - contador atómico + verificación signed | `f0075c5` |
-| `tests/deliverynote.test.js` | Nuevos tests F13 | `3376340` |
-| `EXAMEN.md` | Documentación completa | `3d8bfd8` |
-
----
-
-## Criterios de aceptación verificados
-
-| Criterio | Estado |
-|----------|--------|
-| `generateSequentialNumber` atómico sin duplicados | ✅ Implementado con `findOneAndUpdate` + `$inc` |
-| `delete` rechaza con 400 si `status === 'signed'` | ✅ Implementado línea 249-251 |
-| Test borrar firmado → 400 | ✅ Tests en deliverynote.test.js |
-| Test concurrencia con `Promise.all` no genera duplicados | ✅ Test de sequential numbers únicos |
-| `EXAMEN.md` con respuestas + Proceso | ✅ Documentación completa
