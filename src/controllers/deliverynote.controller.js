@@ -1,4 +1,5 @@
 import DeliveryNote from '../models/deliveryNote.model.js';
+import Counter from '../models/Counter.js';
 import Project from '../models/project.model.js';
 import Client from '../models/client.model.js';
 import { AppError } from '../utils/AppError.js';
@@ -6,23 +7,17 @@ import { uploadImage } from '../services/storage.service.js';
 import { getIO } from '../config/socket.js';
 import { generateDeliveryNotePdf } from '../services/pdf.service.js';
 
+/// F13: Contador atomico con findOneAndUpdate + $inc (reemplaza regex + sort)
 const generateSequentialNumber = async (companyId) => {
   const year = new Date().getFullYear();
-  const prefix = `ALB-${year}-`;
 
-  const lastNote = await DeliveryNote.find({
-    company: companyId,
-    sequentialNumber: { $regex: `^${prefix}` } // Buscamos por prefijo.
-  }).sort({ sequentialNumber: -1 }).limit(1);
+  const counter = await Counter.findOneAndUpdate(
+    { company: companyId, year },
+    { $inc: { seq: 1 } },
+    { new: true, upsert: true }
+  );
 
-  let nextNumber = 1;
-  if (lastNote.length > 0) {
-    const lastSeq = lastNote[0].sequentialNumber;
-    const lastNum = parseInt(lastSeq.split('-')[2]);
-    nextNumber = lastNum + 1;
-  }
-
-  return `${prefix}${nextNumber.toString().padStart(4, '0')}`;
+  return `ALB-${year}-${counter.seq.toString().padStart(4, '0')}`;
 };
 
 export const createDeliveryNoteCtrl = async (req, res, next) => {
@@ -250,6 +245,11 @@ export const deleteDeliveryNoteCtrl = async (req, res, next) => {
 
     if (!deliveryNote) {
       throw AppError.notFound('ALBARAN');
+    }
+
+    /// F13: Verificacion status signed antes de borrado (soft y hard)
+    if (deliveryNote.status === 'signed') {
+      throw AppError.badRequest('NO SE PUEDE ELIMINAR UN ALBARAN FIRMADO');
     }
 
     if (permanent === 'true') {

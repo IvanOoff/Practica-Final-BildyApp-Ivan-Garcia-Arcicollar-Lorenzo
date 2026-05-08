@@ -231,6 +231,74 @@ describe('DELIVERY NOTES - Delivery Note Management', () => {
     });
   });
 
+  describe('DELETE /api/deliverynote/:id - F13 signed check', () => {
+    it('should reject soft delete of signed delivery note', async () => {
+      const newDN = await request(app)
+        .post('/api/deliverynote')
+        .set('Authorization', `Bearer ${token}`)
+        .send({ ...testDeliveryNote, project: projectId })
+        .expect(201);
+
+      const dnId = newDN.body.data._id;
+
+      await request(app)
+        .patch(`/api/deliverynote/${dnId}/sign`)
+        .set('Authorization', `Bearer ${token}`)
+        .send({ signedBy: 'Test Signer' })
+        .expect(200);
+
+      const res = await request(app)
+        .delete(`/api/deliverynote/${dnId}`)
+        .set('Authorization', `Bearer ${token}`)
+        .expect(400);
+
+      expect(res.body.error).toBe(true);
+      expect(res.body.message).toContain('FIRMADO');
+    });
+
+    it('should reject hard delete of signed delivery note', async () => {
+      const newDN = await request(app)
+        .post('/api/deliverynote')
+        .set('Authorization', `Bearer ${token}`)
+        .send({ ...testDeliveryNote, project: projectId })
+        .expect(201);
+
+      const dnId = newDN.body.data._id;
+
+      await request(app)
+        .patch(`/api/deliverynote/${dnId}/sign`)
+        .set('Authorization', `Bearer ${token}`)
+        .send({ signedBy: 'Test Signer' })
+        .expect(200);
+
+      const res = await request(app)
+        .delete(`/api/deliverynote/${dnId}?permanent=true`)
+        .set('Authorization', `Bearer ${token}`)
+        .expect(400);
+
+      expect(res.body.error).toBe(true);
+      expect(res.body.message).toContain('FIRMADO');
+    });
+  });
+
+  describe('POST /api/deliverynote - F13 atomic sequential numbers', () => {
+    it('should generate unique sequential numbers', async () => {
+      const dn1 = await request(app)
+        .post('/api/deliverynote')
+        .set('Authorization', `Bearer ${token}`)
+        .send({ ...testDeliveryNote, project: projectId })
+        .expect(201);
+
+      const dn2 = await request(app)
+        .post('/api/deliverynote')
+        .set('Authorization', `Bearer ${token}`)
+        .send({ ...testDeliveryNote, project: projectId })
+        .expect(201);
+
+      expect(dn1.body.data.sequentialNumber).not.toBe(dn2.body.data.sequentialNumber);
+    });
+  });
+
   afterAll(async () => {
     if (userId) {
       await request(app)
