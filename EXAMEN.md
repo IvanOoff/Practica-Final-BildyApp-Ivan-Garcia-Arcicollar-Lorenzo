@@ -61,6 +61,14 @@ counterSchema.index({ company: 1, year: 1 }, { unique: true });
 
 ### 1. `controller:9-27` — Dos POST simultáneos: ¿qué devuelve `find().sort().limit(1)`? ¿Qué error lanza Mongoose con índice único?
 
+**Código original vulnerable (líneas 13-16):**
+```javascript
+const lastNote = await DeliveryNote.find({
+  company: companyId,
+  sequentialNumber: { $regex: `^${prefix}` }
+}).sort({ sequentialNumber: -1 }).limit(1);
+```
+
 **¿Qué devuelve `find().sort().limit(1)`?**
 
 Ambas solicitudes leen el mismo documento: el último creado (ej: `ALB-2026-0003`). Ambas calculan `nextNumber = 4`. Ambas intentan insertar `ALB-2026-0004`.
@@ -74,6 +82,24 @@ El índice único en `deliveryNoteSchema.index({ sequentialNumber: 1 }, { unique
 ---
 
 ### 2. `controller:242-260` — `update` rechaza modificar firmado, `delete` no. ¿Consecuencias de borrar firmado con URL en Cloudinary?
+
+**Código vulnerable (antes - delete no verificaba):**
+```javascript
+// deliverynote.controller.js línea 254-259 (ANTES)
+deliveryNote.deleted = true;
+deliveryNote.deletedAt = new Date();
+await deliveryNote.save();
+```
+
+**Código corregido (línea 249-252 - AHORA verifica):**
+```javascript
+/// F13: Verificacion status signed antes de borrado (soft y hard)
+if (deliveryNote.status === 'signed') {
+  throw AppError.badRequest('NO SE PUEDE ELIMINAR UN ALBARAN FIRMADO');
+}
+```
+
+**Consecuencias de borrar firmado con URL en Cloudinary:**
 
 - **Huella legal desaparecida:** El albarán firmado tiene valor legal. Si se elimina, no hay forma de demostrar que el servicio fue prestado y aceptado.
 
@@ -98,6 +124,15 @@ El índice único en `deliveryNoteSchema.index({ sequentialNumber: 1 }, { unique
 
 ### 4. Hipotético: numeración secuencial multi-réplica. ¿Por qué `findOneAndUpdate` + `$inc` es más robusto?
 
+**Código que evita el problema (línea 13-17):**
+```javascript
+const counter = await Counter.findOneAndUpdate(
+  { company: companyId, year },
+  { $inc: { seq: 1 } },
+  { new: true, upsert: true }
+);
+```
+
 - **Atomicidad en el servidor:** `findOneAndUpdate` con `$inc` se ejecuta atómicamente en MongoDB. No hay ventana entre búsqueda y actualización.
 
 - **Sin transacciones distribuidas:** El `$inc` se ejecuta en el servidor, no en el cliente. Las múltiples réplicas serializan correctamente.
@@ -109,6 +144,13 @@ El índice único en `deliveryNoteSchema.index({ sequentialNumber: 1 }, { unique
 ---
 
 ### 5. Contraste: `PATCH /:id/sign` rechaza segunda firma con 400, no 200. ¿Cuál sería correcto según RFC 9110?
+
+**Código que implementa esto (línea 185-187 del controller):**
+```javascript
+if (deliveryNote.status === 'signed') {
+  throw AppError.badRequest('YA ESTA FIRMADO');
+}
+```
 
 **400 es correcto según RFC 9110.**
 
