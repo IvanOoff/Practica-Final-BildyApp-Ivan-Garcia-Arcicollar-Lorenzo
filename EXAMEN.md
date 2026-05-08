@@ -34,16 +34,76 @@ if (deliveryNote.status === 'signed') {
 }
 ```
 
-**3. Tests para ambos**
+**3. Tests para ambos casos**
 
 ```javascript
-const counterSchema = new mongoose.Schema({
-  company: { type: mongoose.Schema.Types.ObjectId, ref: 'Company', required: true },
-  year: { type: Number, required: true },
-  seq: { type: Number, default: 0 }
-}, { timestamps: true, versionKey: false });
+// Test 1: soft delete de albarán firmado → 400
+it('should reject soft delete of signed delivery note', async () => {
+  const newDN = await request(app)
+    .post('/api/deliverynote')
+    .set('Authorization', `Bearer ${token}`)
+    .send({ ...testDeliveryNote, project: projectId })
+    .expect(201);
 
-counterSchema.index({ company: 1, year: 1 }, { unique: true });
+  const dnId = newDN.body.data._id;
+
+  await request(app)
+    .patch(`/api/deliverynote/${dnId}/sign`)
+    .set('Authorization', `Bearer ${token}`)
+    .send({ signedBy: 'Test Signer' })
+    .expect(200);
+
+  const res = await request(app)
+    .delete(`/api/deliverynote/${dnId}`)
+    .set('Authorization', `Bearer ${token}`)
+    .expect(400);
+
+  expect(res.body.error).toBe(true);
+  expect(res.body.message).toContain('FIRMADO');
+});
+
+// Test 2: hard delete de albarán firmado → 400
+it('should reject hard delete of signed delivery note', async () => {
+  const newDN = await request(app)
+    .post('/api/deliverynote')
+    .set('Authorization', `Bearer ${token}`)
+    .send({ ...testDeliveryNote, project: projectId })
+    .expect(201);
+
+  const dnId = newDN.body.data._id;
+
+  await request(app)
+    .patch(`/api/deliverynote/${dnId}/sign`)
+    .set('Authorization', `Bearer ${token}`)
+    .send({ signedBy: 'Test Signer' })
+    .expect(200);
+
+  const res = await request(app)
+    .delete(`/api/deliverynote/${dnId}?permanent=true`)
+    .set('Authorization', `Bearer ${token}`)
+    .expect(400);
+
+  expect(res.body.error).toBe(true);
+  expect(res.body.message).toContain('FIRMADO');
+});
+
+// Test 3: sequential numbers únicos con Promise.all (concurrencia)
+it('should generate unique sequential numbers', async () => {
+  const [dn1, dn2] = await Promise.all([
+    request(app)
+      .post('/api/deliverynote')
+      .set('Authorization', `Bearer ${token}`)
+      .send({ ...testDeliveryNote, project: projectId })
+      .expect(201),
+    request(app)
+      .post('/api/deliverynote')
+      .set('Authorization', `Bearer ${token}`)
+      .send({ ...testDeliveryNote, project: projectId })
+      .expect(201)
+  ]);
+
+  expect(dn1.body.data.sequentialNumber).not.toBe(dn2.body.data.sequentialNumber);
+});
 ```
 
 **Archivos y líneas modificadas:**
