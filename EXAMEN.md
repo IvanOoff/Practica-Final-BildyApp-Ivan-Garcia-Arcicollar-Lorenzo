@@ -37,7 +37,6 @@ if (deliveryNote.status === 'signed') {
 **3. Tests para ambos casos**
 
 ```javascript
-// Test 1: soft delete de albarán firmado → 400
 it('should reject soft delete of signed delivery note', async () => {
   const newDN = await request(app)
     .post('/api/deliverynote')
@@ -62,7 +61,6 @@ it('should reject soft delete of signed delivery note', async () => {
   expect(res.body.message).toContain('FIRMADO');
 });
 
-// Test 2: hard delete de albarán firmado → 400
 it('should reject hard delete of signed delivery note', async () => {
   const newDN = await request(app)
     .post('/api/deliverynote')
@@ -87,7 +85,6 @@ it('should reject hard delete of signed delivery note', async () => {
   expect(res.body.message).toContain('FIRMADO');
 });
 
-// Test 3: sequential numbers únicos con Promise.all (concurrencia)
 it('should generate unique sequential numbers', async () => {
   const [dn1, dn2] = await Promise.all([
     request(app)
@@ -145,7 +142,6 @@ El índice único en `deliveryNoteSchema.index({ sequentialNumber: 1 }, { unique
 
 **Código vulnerable (antes - delete no verificaba):**
 ```javascript
-// deliverynote.controller.js línea 254-259 (ANTES)
 deliveryNote.deleted = true;
 deliveryNote.deletedAt = new Date();
 await deliveryNote.save();
@@ -153,7 +149,6 @@ await deliveryNote.save();
 
 **Código corregido (línea 249-252 - AHORA verifica):**
 ```javascript
-/// F13: Verificacion status signed antes de borrado (soft y hard)
 if (deliveryNote.status === 'signed') {
   throw AppError.badRequest('NO SE PUEDE ELIMINAR UN ALBARAN FIRMADO');
 }
